@@ -511,9 +511,9 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
             if (bandwidthValue == BandwidthValue::SUM_BW || BandwidthValue::TOTAL_BW || i == 0) {
                 VERBOSE << "\tSample " << n << ": " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << ": " <<
                     std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s\t"
-                    << "warmup end at: " std::fixed << std::setprecision(3) << warmupTime << " ms\t"
-                    << "memcpy start at: " std::fixed << std::setprecision(3) << startTime << " ms\t"
-                    << "memcpy end at: " std::fixed << std::setprecision(3) << endTime << " ms\n";
+                    << "warmup end at: " << std::fixed << std::setprecision(3) << warmupTime << " ms\t"
+                    << "memcpy start at: " << std::fixed << std::setprecision(3) << startTime << " ms\t"
+                    << "memcpy end at: " << std::fixed << std::setprecision(3) << totalTime << " ms\n";
             }
         }
 
