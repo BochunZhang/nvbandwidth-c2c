@@ -82,8 +82,8 @@ std::vector<Testcase*> createTestcases() {
         new AllToHostBidirCE(),
         new HostToAllCE(),
         new HostToAllBidirCE(),
-        new HostToAnyCE(),
-        new AnyToHostCE(),
+        // new HostToAnyCE(),  // TODO: enable after verbose log testing
+        // new AnyToHostCE(),  // TODO: enable after verbose log testing
         new AllToOneWriteCE(),
         new AllToOneReadCE(),
         new OneToAllWriteCE(),
@@ -100,8 +100,8 @@ std::vector<Testcase*> createTestcases() {
         new AllToHostBidirSM(),
         new HostToAllSM(),
         new HostToAllBidirSM(),
-        new HostToAnySM(),
-        new AnyToHostSM(),
+        // new HostToAnySM(),  // TODO: enable after verbose log testing
+        // new AnyToHostSM(),  // TODO: enable after verbose log testing
         new AllToOneWriteSM(),
         new AllToOneReadSM(),
         new OneToAllWriteSM(),

@@ -215,6 +215,7 @@ class HostToAllBidirCE: public Testcase {
 };
 
 
+/*
 // Host to Any CE memcpy: configurable CPU-GPU communication test with multiple streams
 // Tests each target GPU with interference from other GPUs (2x buffer)
 class HostToAnyCE: public Testcase {
@@ -248,6 +249,7 @@ class AnyToHostCE: public Testcase {
     virtual ~AnyToHostCE() {}
     void run(unsigned long long size, unsigned long long loopCount);
 };
+*/
 
 // All to One CE Write memcpy using cuMemcpyAsync
 class AllToOneWriteCE: public Testcase {
@@ -426,6 +428,7 @@ class HostToAllBidirSM: public Testcase {
     void run(unsigned long long size, unsigned long long loopCount);
 };
 
+/*
 // Host to Any SM memcpy: configurable CPU-GPU communication test with multiple streams using SM kernels
 // Tests each target GPU with interference from other GPUs (2x buffer)
 class HostToAnySM: public Testcase {
@@ -459,6 +462,7 @@ class AnyToHostSM: public Testcase {
     virtual ~AnyToHostSM() {}
     void run(unsigned long long size, unsigned long long loopCount);
 };
+*/
 
 // All to One SM Write memcpy using a copy kernel
 class AllToOneWriteSM: public Testcase {

@@ -229,7 +229,7 @@ void Testcase::allHostHelper(unsigned long long size, MemcpyOperation &memcpyIns
             bandwidthValues.value(0, deviceId) = memcpyInstance.doMemcpy(deviceBuffers, hostBuffers);
         }
 
-        VERBOSE << "Result: " << bandwidthValues.value(0, deviceId) << " GB/s" << std::endl;
+        VERBOSE << "Result: " << bandwidthValues.value(0, deviceId).value_or(0.0) << " GB/s" << std::endl;
 
         for (auto node : deviceBuffers) {
             delete node;

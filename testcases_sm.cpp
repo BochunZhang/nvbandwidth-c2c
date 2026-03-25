@@ -326,6 +326,7 @@ void HostToAllBidirSM::run(unsigned long long size, unsigned long long loopCount
     output->addTestcaseResults(bandwidthValues, "memcpy SM CPU(row) <-> GPU(column) bandwidth (GB/s)");
 }
 
+/*
 void HostToAnySM::run(unsigned long long size, unsigned long long loopCount) {
     // Use configured values or defaults
     int cpuId = hostToAnyCpuId;
@@ -442,9 +443,9 @@ void HostToAnySM::run(unsigned long long size, unsigned long long loopCount) {
     for (size_t i = 0; i < gpuIds.size(); i++) {
         OUTPUT << std::setw(10) << ("GPU " + std::to_string(gpuIds[i]));
         for (int s = 0; s < streamCount; s++) {
-            OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, s);
+            OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, s).value_or(0.0);
         }
-        OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, streamCount);
+        OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, streamCount).value_or(0.0);
         OUTPUT << " GB/s" << std::endl;
     }
 
@@ -570,9 +571,9 @@ void AnyToHostSM::run(unsigned long long size, unsigned long long loopCount) {
     for (size_t i = 0; i < gpuIds.size(); i++) {
         OUTPUT << std::setw(10) << ("GPU " + std::to_string(gpuIds[i]));
         for (int s = 0; s < streamCount; s++) {
-            OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, s);
+            OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, s).value_or(0.0);
         }
-        OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, streamCount);
+        OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, streamCount).value_or(0.0);
         OUTPUT << " GB/s" << std::endl;
     }
 
@@ -581,6 +582,7 @@ void AnyToHostSM::run(unsigned long long size, unsigned long long loopCount) {
         "memcpy SM GPU -> CPU bandwidth (GB/s)\n"
         "  Rows: Target GPUs | Columns: Per-stream BW + Aggregate");
 }
+*/
 
 // Write test - copy from src to dst using src context
 void AllToOneWriteSM::run(unsigned long long size, unsigned long long loopCount) {
