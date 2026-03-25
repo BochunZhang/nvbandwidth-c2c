@@ -45,6 +45,13 @@ bool skipVerification;
 bool useMean;
 bool perfFormatter;
 
+// HostToAnyCE configuration parameters
+int hostToAnyCpuId = 0;  // Default CPU 0
+std::vector<int> hostToAnyGpuIds;  // Empty by default (will use all GPUs if not specified)
+int hostToAnyStreamCount = 1;  // Default 1 stream per GPU
+unsigned long long hostToAnyStreamBufferSize = 0;  // 0 means use default bufferSize
+unsigned long long hostToAnyStreamLoopCount = 0;   // 0 means use default loopCount
+
 Verbosity VERBOSE(verbose);
 Verbosity OUTPUT(shouldOutput);
 
@@ -75,6 +82,8 @@ std::vector<Testcase*> createTestcases() {
         new AllToHostBidirCE(),
         new HostToAllCE(),
         new HostToAllBidirCE(),
+        new HostToAnyCE(),
+        new AnyToHostCE(),
         new AllToOneWriteCE(),
         new AllToOneReadCE(),
         new OneToAllWriteCE(),
@@ -91,6 +100,8 @@ std::vector<Testcase*> createTestcases() {
         new AllToHostBidirSM(),
         new HostToAllSM(),
         new HostToAllBidirSM(),
+        new HostToAnySM(),
+        new AnyToHostSM(),
         new AllToOneWriteSM(),
         new AllToOneReadSM(),
         new OneToAllWriteSM(),
@@ -215,7 +226,12 @@ int main(int argc, char **argv) {
         ("disableAffinity,d", opt::bool_switch(&disableAffinity)->default_value(false), "Disable automatic CPU affinity control")
         ("testSamples,i", opt::value<unsigned int>(&averageLoopCount)->default_value(defaultAverageLoopCount), "Iterations of the benchmark")
         ("useMean,m", opt::bool_switch(&useMean)->default_value(false), "Use mean instead of median for results")
-        ("json,j", opt::bool_switch(&jsonOutput)->default_value(false), "Print output in json format instead of plain text.");
+        ("json,j", opt::bool_switch(&jsonOutput)->default_value(false), "Print output in json format instead of plain text.")
+        ("hostToAnyCpu", opt::value<int>(&hostToAnyCpuId)->default_value(0), "CPU ID (0 or 1) for HostToAny test")
+        ("hostToAnyGpus", opt::value<std::vector<int>>(&hostToAnyGpuIds)->multitoken(), "GPU IDs (0-3) for HostToAny test (space-separated)")
+        ("hostToAnyStreams", opt::value<int>(&hostToAnyStreamCount)->default_value(1), "Number of streams per GPU for HostToAny test")
+        ("hostToAnyStreamBufferSize", opt::value<unsigned long long>(&hostToAnyStreamBufferSize)->default_value(0), "Buffer size per stream for HostToAny test in MiB (0=use default bufferSize)")
+        ("hostToAnyStreamLoopCount", opt::value<unsigned long long>(&hostToAnyStreamLoopCount)->default_value(0), "Loop count per stream for HostToAny test (0=use default loopCount)");
 
     opt::options_description all_opts("");
     all_opts.add(visible_opts);

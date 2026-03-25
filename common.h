@@ -57,6 +57,13 @@ extern bool jsonOutput;
 extern bool verbose;
 extern bool perfFormatter;
 
+// HostToAnyCE configuration parameters
+extern int hostToAnyCpuId;           // CPU ID (0 or 1) for HostToAny test
+extern std::vector<int> hostToAnyGpuIds;  // GPU IDs (0-3) for HostToAny test
+extern int hostToAnyStreamCount;     // Number of streams per GPU
+extern unsigned long long hostToAnyStreamBufferSize; // Buffer size per stream (in bytes)
+extern unsigned long long hostToAnyStreamLoopCount;  // Loop count per stream
+
 #ifdef MULTINODE
 extern int localDevice;
 extern int localRank;

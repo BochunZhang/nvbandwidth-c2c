@@ -192,27 +192,44 @@ void Testcase::oneToAllHelper(unsigned long long size, MemcpyOperation &memcpyIn
 
 void Testcase::allHostHelper(unsigned long long size, MemcpyOperation &memcpyInstance, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost) {
     for (int deviceId = 0; deviceId < deviceCount; deviceId++) {
+        VERBOSE << "\n--- Measuring " << (sourceIsHost ? "CPU -> GPU" : "GPU -> CPU") << " ---" << std::endl;
+        VERBOSE << "Target " << (sourceIsHost ? "GPU" : "GPU") << " ID: " << deviceId << std::endl;
+        VERBOSE << "Allocating buffers:" << std::endl;
+
         std::vector<const MemcpyBuffer*> deviceBuffers;
         std::vector<const MemcpyBuffer*> hostBuffers;
 
+        VERBOSE << "  [Measured] GPU " << deviceId << " buffer: " << (size / _MiB) << " MiB" << std::endl;
+        VERBOSE << "  [Measured] Host buffer (NUMA affinity for GPU " << deviceId << "): " << (size / _MiB) << " MiB" << std::endl;
         deviceBuffers.push_back(new DeviceBuffer(size, deviceId));
         hostBuffers.push_back(new HostBuffer(size, deviceId));
 
+        int interferenceCount = 0;
         for (int interferenceDeviceId = 0; interferenceDeviceId < deviceCount; interferenceDeviceId++) {
             if (interferenceDeviceId == deviceId) {
                 continue;
             }
 
             // Double the size of the interference copy to ensure it interferes correctly
+            VERBOSE << "  [Interference " << (++interferenceCount) << "] GPU " << interferenceDeviceId
+                    << " buffer: " << (size * 2 / _MiB) << " MiB" << std::endl;
+            VERBOSE << "  [Interference " << interferenceCount << "] Host buffer (NUMA affinity for GPU "
+                    << interferenceDeviceId << "): " << (size * 2 / _MiB) << " MiB" << std::endl;
             deviceBuffers.push_back(new DeviceBuffer(size * 2, interferenceDeviceId));
             hostBuffers.push_back(new HostBuffer(size * 2, interferenceDeviceId));
         }
+
+        VERBOSE << "Total " << (sourceIsHost ? "host" : "device") << " buffers: " << hostBuffers.size()
+                << " (1 measured + " << (deviceCount - 1) << " interference)" << std::endl;
+        VERBOSE << "Executing memory copy..." << std::endl;
 
         if (sourceIsHost) {
             bandwidthValues.value(0, deviceId) = memcpyInstance.doMemcpy(hostBuffers, deviceBuffers);
         } else {
             bandwidthValues.value(0, deviceId) = memcpyInstance.doMemcpy(deviceBuffers, hostBuffers);
         }
+
+        VERBOSE << "Result: " << bandwidthValues.value(0, deviceId) << " GB/s" << std::endl;
 
         for (auto node : deviceBuffers) {
             delete node;
@@ -222,6 +239,26 @@ void Testcase::allHostHelper(unsigned long long size, MemcpyOperation &memcpyIns
             delete node;
         }
     }
+}
+
+void Testcase::allHostAggregateHelper(unsigned long long size, MemcpyOperation &memcpyInstance, double &result, bool sourceIsHost) {
+    std::vector<const MemcpyBuffer*> deviceBuffers;
+    std::vector<const MemcpyBuffer*> hostBuffers;
+
+    // Allocate one buffer per GPU - all run concurrently with no interference sizing
+    for (int deviceId = 0; deviceId < deviceCount; deviceId++) {
+        deviceBuffers.push_back(new DeviceBuffer(size, deviceId));
+        hostBuffers.push_back(new HostBuffer(size, deviceId));
+    }
+
+    if (sourceIsHost) {
+        result = memcpyInstance.doMemcpy(hostBuffers, deviceBuffers);
+    } else {
+        result = memcpyInstance.doMemcpy(deviceBuffers, hostBuffers);
+    }
+
+    for (auto node : deviceBuffers) { delete node; }
+    for (auto node : hostBuffers) { delete node; }
 }
 
 void Testcase::allHostBidirHelper(unsigned long long size, MemcpyOperation &memcpyInstance, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost) {
