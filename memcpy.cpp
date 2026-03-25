@@ -389,6 +389,8 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
     std::vector<CUstream> streams(info.srcBuffers.size());
     std::vector<CUevent> startEvents(info.srcBuffers.size());
     std::vector<CUevent> endEvents(info.srcBuffers.size());
+    std::vector<CUevent> warmupStartEvents(info.srcBuffers.size());
+    std::vector<CUevent> warmupEndEvents(info.srcBuffers.size());
     std::vector<PerformanceStatistic> bandwidthStats(info.srcBuffers.size());
     std::vector<size_t> adjustedCopySizes(info.srcBuffers.size());
     PerformanceStatistic totalBandwidth;
@@ -402,6 +404,8 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
         info.streams.push_back(streams[i]);
         CU_ASSERT(cuEventCreate(&startEvents[i], CU_EVENT_DEFAULT));
         CU_ASSERT(cuEventCreate(&endEvents[i], CU_EVENT_DEFAULT));
+        CU_ASSERT(cuEventCreate(&warmupStartEvents[i], CU_EVENT_DEFAULT));
+        CU_ASSERT(cuEventCreate(&warmupEndEvents[i], CU_EVENT_DEFAULT));
         // Get the final copy size that will be used.
         // CE and SM copy sizes will differ due to possible truncation
         // during SM copies.
@@ -428,9 +432,15 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
 
             nodeHelper->streamBlockerBlock(info.streams[i]);
 
+            // record warmup start event
+            CU_ASSERT(cuEventRecord(warmupStartEvents[i], info.streams[i]));
+
             // warmup
             MemcpyDescriptor desc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), WARMUP_COUNT);
             memcpyInitiator->memcpyFunc(desc);
+
+            // record warmup end event
+            CU_ASSERT(cuEventRecord(warmupEndEvents[i], info.streams[i]));
         }
 
         if (info.srcBuffers.size() > 0) {
@@ -491,6 +501,17 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
                 VERBOSE << "\tSample " << n << ": " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << ": " <<
                     std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s\n";
             }
+
+            // Print timing information for each stream
+            float warmupTime = 0.0f, startTime = 0.0f, totalTime = 0.0f;
+            CU_ASSERT(cuEventElapsedTime(&warmupTime, warmupStartEvents[i], warmupEndEvents[i]));
+            CU_ASSERT(cuEventElapsedTime(&startTime, warmupStartEvents[i], startEvents[i]));
+            CU_ASSERT(cuEventElapsedTime(&totalTime, warmupStartEvents[i], endEvents[i]));
+
+            std::cout << "\t[Stream " << i << " - " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << "]\n";
+            std::cout << "\t  Warmup time (warmupEnd - warmupStart): " << std::fixed << std::setprecision(3) << warmupTime << " ms\n";
+            std::cout << "\t  Time to test start (start - warmupStart): " << std::fixed << std::setprecision(3) << startTime << " ms\n";
+            std::cout << "\t  Total time (end - warmupStart): " << std::fixed << std::setprecision(3) << totalTime << " ms\n";
         }
 
         if (bandwidthValue == BandwidthValue::TOTAL_BW) {
@@ -520,6 +541,8 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
         CU_ASSERT(cuStreamDestroy(info.streams[i]));
         CU_ASSERT(cuEventDestroy(startEvents[i]));
         CU_ASSERT(cuEventDestroy(endEvents[i]));
+        CU_ASSERT(cuEventDestroy(warmupStartEvents[i]));
+        CU_ASSERT(cuEventDestroy(warmupEndEvents[i]));
     }
 
     if (bandwidthValue == BandwidthValue::SUM_BW) {
