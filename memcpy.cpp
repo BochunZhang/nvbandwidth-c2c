@@ -496,11 +496,11 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
 
             bandwidthStats[i]((double) bandwidth);
 
-            if (bandwidthValue == BandwidthValue::SUM_BW || BandwidthValue::TOTAL_BW || i == 0) {
-                // Verbose print only the values that are used for the final output
-                VERBOSE << "\tSample " << n << ": " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << ": " <<
-                    std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s\n";
-            }
+            // if (bandwidthValue == BandwidthValue::SUM_BW || BandwidthValue::TOTAL_BW || i == 0) {
+            //     // Verbose print only the values that are used for the final output
+            //     VERBOSE << "\tSample " << n << ": " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << ": " <<
+            //         std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s\n";
+            // }
 
             // Print timing information for each stream
             float warmupTime = 0.0f, startTime = 0.0f, totalTime = 0.0f;
@@ -508,10 +508,13 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
             CU_ASSERT(cuEventElapsedTime(&startTime, warmupStartEvents[i], startEvents[i]));
             CU_ASSERT(cuEventElapsedTime(&totalTime, warmupStartEvents[i], endEvents[i]));
 
-            std::cout << "\t[Stream " << i << " - " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << "]\n";
-            std::cout << "\t  Warmup time (warmupEnd - warmupStart): " << std::fixed << std::setprecision(3) << warmupTime << " ms\n";
-            std::cout << "\t  Time to test start (start - warmupStart): " << std::fixed << std::setprecision(3) << startTime << " ms\n";
-            std::cout << "\t  Total time (end - warmupStart): " << std::fixed << std::setprecision(3) << totalTime << " ms\n";
+            if (bandwidthValue == BandwidthValue::SUM_BW || BandwidthValue::TOTAL_BW || i == 0) {
+                VERBOSE << "\tSample " << n << ": " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << ": " <<
+                    std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s\t"
+                    << "warmup end at: " std::fixed << std::setprecision(3) << warmupTime << " ms\t"
+                    << "memcpy start at: " std::fixed << std::setprecision(3) << startTime << " ms\t"
+                    << "memcpy end at: " std::fixed << std::setprecision(3) << endTime << " ms\n";
+            }
         }
 
         if (bandwidthValue == BandwidthValue::TOTAL_BW) {
