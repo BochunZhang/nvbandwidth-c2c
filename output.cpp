@@ -81,7 +81,7 @@ std::string getDeviceDisplayInfo(int deviceOrdinal) {
     CUdevice dev;
     char name[STRING_LENGTH];
     int busId, deviceId, domainId;
-
+    int asyncEngineCount, gpuOverlap;
     CU_ASSERT(cuDeviceGet(&dev, deviceOrdinal));
     CU_ASSERT(cuDeviceGetName(name, STRING_LENGTH, dev));
     CU_ASSERT(cuDeviceGetAttribute(&domainId, CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID, dev));
@@ -92,6 +92,10 @@ std::string getDeviceDisplayInfo(int deviceOrdinal) {
         std::hex << std::setw(2) << std::setfill('0') << busId << ":" <<
         std::hex << std::setw(2) << std::setfill('0') << deviceId << ")" <<
         std::dec << std::setfill(' ') << std::setw(0);  // reset formatting
+
+    CU_ASSERT(cuDeviceGetAttribute(&asyncEngineCount, CU_DEVICE_ATTRIBUTE_ASYNC_ENGINE_COUNT, dev));
+    CU_ASSERT(cuDeviceGetAttribute(&gpuOverlap, CU_DEVICE_ATTRIBUTE_GPU_OVERLAP, dev));
+    sstream << " asyncEngineCount: " << asyncEngineCount << ", gpuOverlap: " << gpuOverlap;
 
     return sstream.str();
 }
