@@ -662,14 +662,11 @@ std::vector<double> MemcpyOperation::doConcurrentMemcpyCore(MemcpyDispatchInfo &
         // ========== Phase 3: Cooldown ==========
         for (int i = 0; i < info.srcBuffers.size(); i++) {
             CU_ASSERT(cuCtxSetCurrent(info.contexts[i]));
+            
+            CU_ASSERT(cuEventRecord(cooldownStartEvents[i], info.streams[i]));
             MemcpyDescriptor cooldownDesc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), COOLDOWN_COUNT);
             memcpyInitiator->memcpyFunc(cooldownDesc);
             CU_ASSERT(cuEventRecord(cooldownEndEvents[i], info.streams[i]));
-
-            if (bandwidthValue == BandwidthValue::TOTAL_BW && i != 0) {
-                // make stream0 wait on the all the others so we can measure total completion time
-                CU_ASSERT(cuStreamWaitEvent(info.streams[0], cooldownEndEvents[i], 0));
-            }
         }
 
         // record the total end - only valid if BandwidthValue::TOTAL_BW is used due to StreamWaitEvent above
