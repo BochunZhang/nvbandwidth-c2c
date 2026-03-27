@@ -250,6 +250,7 @@ void HostToAllCE::run(unsigned long long size, unsigned long long loopCount) {
     VERBOSE << "Loop count (inner iterations): " << loopCount << std::endl;
     VERBOSE << "Average loop count (test repetitions): " << averageLoopCount << std::endl;
     VERBOSE << "Test pattern: CPU -> GPU[i] with interference from CPU -> GPU[j] (j != i)" << std::endl;
+    VERBOSE << "BandwidthValue::USE_FIRST_BW" << std::endl;
     VERBOSE << "====================================\n" << std::endl;
 
     PeerValueMatrix<double> bandwidthValues(1, deviceCount, key);
@@ -269,264 +270,107 @@ void HostToAllBidirCE::run(unsigned long long size, unsigned long long loopCount
     output->addTestcaseResults(bandwidthValues, "memcpy CE CPU(row) <-> GPU(column) bandwidth (GB/s)");
 }
 
-/*
 void HostToAnyCE::run(unsigned long long size, unsigned long long loopCount) {
-    // Use configured values or defaults
-    int cpuId = hostToAnyCpuId;
+    // Use configured GPU IDs, or default to all GPUs
     std::vector<int> gpuIds = hostToAnyGpuIds;
-    int streamCount = hostToAnyStreamCount;
-    unsigned long long streamBufferSize = (hostToAnyStreamBufferSize == 0) ? size : hostToAnyStreamBufferSize * _MiB;
-    unsigned long long streamLoopCount = (hostToAnyStreamLoopCount == 0) ? loopCount : hostToAnyStreamLoopCount;
-    unsigned long long interferenceBufferSize = 2 * streamBufferSize;  // 2x buffer for interference streams
-
-    // If no GPUs specified, use all available GPUs
     if (gpuIds.empty()) {
         for (int i = 0; i < deviceCount; i++) {
             gpuIds.push_back(i);
         }
     }
 
-    // Validate parameters
-    if (cpuId < 0 || cpuId > 1) {
-        OUTPUT << "ERROR: Invalid CPU ID " << cpuId << ". Must be 0 or 1." << std::endl;
-        return;
-    }
-    for (int gpuId : gpuIds) {
-        if (gpuId < 0 || gpuId >= deviceCount) {
-            OUTPUT << "ERROR: Invalid GPU ID " << gpuId << ". Must be 0-" << (deviceCount - 1) << std::endl;
-            return;
-        }
-    }
-    if (streamCount < 1) {
-        OUTPUT << "ERROR: Invalid stream count " << streamCount << ". Must be >= 1." << std::endl;
-        return;
-    }
+    int streamCount = hostToAnyStreamCount;
 
     VERBOSE << "\n=== HostToAnyCE Test Configuration ===" << std::endl;
-    VERBOSE << "CPU ID: " << cpuId << std::endl;
     VERBOSE << "GPU IDs: ";
     for (int gpuId : gpuIds) {
         VERBOSE << gpuId << " ";
     }
     VERBOSE << std::endl;
-    VERBOSE << "Streams per GPU (target): " << streamCount << std::endl;
-    VERBOSE << "Buffer size per stream (target): " << (streamBufferSize / _MiB) << " MiB" << std::endl;
-    VERBOSE << "Buffer size per stream (interference): " << (interferenceBufferSize / _MiB) << " MiB (2x target)" << std::endl;
-    VERBOSE << "Loop count per stream: " << streamLoopCount << std::endl;
+    VERBOSE << "Streams per GPU: " << streamCount << std::endl;
+    VERBOSE << "Buffer size: " << (size / _MiB) << " MiB" << std::endl;
+    VERBOSE << "Loop count (inner iterations): " << loopCount << std::endl;
     VERBOSE << "Average loop count (test repetitions): " << averageLoopCount << std::endl;
-    VERBOSE << "Test pattern: For each target GPU, test with interference from other GPUs" << std::endl;
     VERBOSE << "====================================\n" << std::endl;
 
-    // Output matrix: rows = target GPUs, columns = streams + aggregate
-    // Each row shows per-stream bandwidth for that target GPU + total
-    PeerValueMatrix<double> bandwidthValues(gpuIds.size(), streamCount + 1, key);
+    // Execute test
+    PeerValueMatrix<double> bandwidthValues(1, gpuIds.size(), key);
+    MemcpyOperation memcpyInstance(loopCount, new MemcpyInitiatorCE(), PREFER_SRC_CONTEXT, MemcpyOperation::CONCURRENT_BW);
 
-    // Test each GPU as target, with other GPUs as interference
-    for (size_t targetIdx = 0; targetIdx < gpuIds.size(); targetIdx++) {
-        int targetGpu = gpuIds[targetIdx];
+    anyHostHelper(size, memcpyInstance, gpuIds, streamCount, bandwidthValues, true);
 
-        VERBOSE << "\n--- Testing Target GPU " << targetGpu << " ---" << std::endl;
-
-        // Create buffers
-        std::vector<const MemcpyBuffer*> hostBuffers;
-        std::vector<const MemcpyBuffer*> deviceBuffers;
-
-        // 1. Create target streams (this GPU being tested)
-        VERBOSE << "Creating " << streamCount << " target stream(s) for GPU " << targetGpu
-                << " with buffer size " << (streamBufferSize / _MiB) << " MiB" << std::endl;
-        for (int s = 0; s < streamCount; s++) {
-            hostBuffers.push_back(new HostBuffer(streamBufferSize, targetGpu));
-            deviceBuffers.push_back(new DeviceBuffer(streamBufferSize, targetGpu));
-        }
-
-        // 2. Create interference streams (other GPUs with 2x buffer)
-        for (size_t otherIdx = 0; otherIdx < gpuIds.size(); otherIdx++) {
-            if (otherIdx == targetIdx) continue;
-            int otherGpu = gpuIds[otherIdx];
-            VERBOSE << "Creating " << streamCount << " interference stream(s) for GPU " << otherGpu
-                    << " with buffer size " << (interferenceBufferSize / _MiB) << " MiB" << std::endl;
-            for (int s = 0; s < streamCount; s++) {
-                hostBuffers.push_back(new HostBuffer(interferenceBufferSize, otherGpu));
-                deviceBuffers.push_back(new DeviceBuffer(interferenceBufferSize, otherGpu));
-            }
-        }
-
-        // Execute all copies simultaneously
-        MemcpyOperation memcpyInstance(streamLoopCount, new MemcpyInitiatorCE(), PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
-        std::vector<double> allBandwidths = memcpyInstance.doMemcpyVector(hostBuffers, deviceBuffers);
-
-        // Extract target GPU results (first streamCount entries)
-        double targetAggregate = 0.0;
-        VERBOSE << "Target GPU " << targetGpu << " stream bandwidths:" << std::endl;
-        for (int s = 0; s < streamCount; s++) {
-            double bw = allBandwidths[s];
-            bandwidthValues.value(targetIdx, s) = bw;
-            targetAggregate += bw;
-            VERBOSE << "  Stream " << s << ": " << std::fixed << std::setprecision(2) << bw << " GB/s" << std::endl;
-        }
-        bandwidthValues.value(targetIdx, streamCount) = targetAggregate;
-        VERBOSE << "  Aggregate: " << std::fixed << std::setprecision(2) << targetAggregate << " GB/s" << std::endl;
-
-        // Cleanup
-        for (auto buf : hostBuffers) delete buf;
-        for (auto buf : deviceBuffers) delete buf;
-    }
-
-    // Print final results
-    OUTPUT << "\n=== HostToAnyCE Results ===" << std::endl;
-    OUTPUT << "CPU " << cpuId << " -> GPUs, " << streamCount << " stream(s) per GPU" << std::endl;
-    OUTPUT << "Target buffer: " << (streamBufferSize / _MiB) << " MiB, Interference buffer: " << (interferenceBufferSize / _MiB) << " MiB" << std::endl;
-    OUTPUT << std::endl;
-
-    OUTPUT << std::setw(10) << "Target GPU";
-    for (int s = 0; s < streamCount; s++) {
-        OUTPUT << std::setw(12) << ("Stream " + std::to_string(s));
-    }
-    OUTPUT << std::setw(12) << "Aggregate" << std::endl;
-
-    for (size_t i = 0; i < gpuIds.size(); i++) {
-        OUTPUT << std::setw(10) << ("GPU " + std::to_string(gpuIds[i]));
-        for (int s = 0; s < streamCount; s++) {
-            OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, s).value_or(0.0);
-        }
-        OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, streamCount).value_or(0.0);
-        OUTPUT << " GB/s" << std::endl;
-    }
-
-    // Add results to standard output system (for JSON and perf formatter support)
     output->addTestcaseResults(bandwidthValues,
-        "memcpy CE CPU -> GPU bandwidth (GB/s)\n"
-        "  Rows: Target GPUs | Columns: Per-stream BW + Aggregate");
+        "memcpy CE Host->GPU bandwidth (GB/s)\n  Columns: Per-stream BW + Aggregate");
 }
 
 void AnyToHostCE::run(unsigned long long size, unsigned long long loopCount) {
-    // Use configured values or defaults
-    int cpuId = hostToAnyCpuId;
-    std::vector<int> gpuIds = hostToAnyGpuIds;
-    int streamCount = hostToAnyStreamCount;
-    unsigned long long streamBufferSize = (hostToAnyStreamBufferSize == 0) ? size : hostToAnyStreamBufferSize * _MiB;
-    unsigned long long streamLoopCount = (hostToAnyStreamLoopCount == 0) ? loopCount : hostToAnyStreamLoopCount;
-    unsigned long long interferenceBufferSize = 2 * streamBufferSize;  // 2x buffer for interference streams
+    VERBOSE << "\n=== AnyToHostCE Test Configuration ===" << std::endl;
 
-    // If no GPUs specified, use all available GPUs
+    // Use configured GPU IDs, or default to all GPUs
+    std::vector<int> gpuIds = hostToAnyGpuIds;
     if (gpuIds.empty()) {
         for (int i = 0; i < deviceCount; i++) {
             gpuIds.push_back(i);
         }
     }
 
-    // Validate parameters
-    if (cpuId < 0 || cpuId > 1) {
-        OUTPUT << "ERROR: Invalid CPU ID " << cpuId << ". Must be 0 or 1." << std::endl;
-        return;
-    }
-    for (int gpuId : gpuIds) {
-        if (gpuId < 0 || gpuId >= deviceCount) {
-            OUTPUT << "ERROR: Invalid GPU ID " << gpuId << ". Must be 0-" << (deviceCount - 1) << std::endl;
-            return;
-        }
-    }
-    if (streamCount < 1) {
-        OUTPUT << "ERROR: Invalid stream count " << streamCount << ". Must be >= 1." << std::endl;
-        return;
-    }
+    int streamCount = hostToAnyStreamCount;
 
-    VERBOSE << "\n=== AnyToHostCE Test Configuration ===" << std::endl;
-    VERBOSE << "CPU ID: " << cpuId << std::endl;
     VERBOSE << "GPU IDs: ";
     for (int gpuId : gpuIds) {
         VERBOSE << gpuId << " ";
     }
     VERBOSE << std::endl;
-    VERBOSE << "Streams per GPU (target): " << streamCount << std::endl;
-    VERBOSE << "Buffer size per stream (target): " << (streamBufferSize / _MiB) << " MiB" << std::endl;
-    VERBOSE << "Buffer size per stream (interference): " << (interferenceBufferSize / _MiB) << " MiB (2x target)" << std::endl;
-    VERBOSE << "Loop count per stream: " << streamLoopCount << std::endl;
-    VERBOSE << "Average loop count (test repetitions): " << averageLoopCount << std::endl;
-    VERBOSE << "Test pattern: For each target GPU, test with interference from other GPUs" << std::endl;
+    VERBOSE << "Streams per GPU: " << streamCount << std::endl;
+    VERBOSE << "Buffer size: " << (size / _MiB) << " MiB" << std::endl;
+    VERBOSE << "Loop count: " << loopCount << std::endl;
     VERBOSE << "====================================\n" << std::endl;
 
-    // Output matrix: rows = target GPUs, columns = streams + aggregate
-    PeerValueMatrix<double> bandwidthValues(gpuIds.size(), streamCount + 1, key);
+    // Execute test
+    MemcpyOperation memcpyInstance(loopCount, new MemcpyInitiatorCE(), PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+    std::vector<double> results;
+    anyHostHelper(size, memcpyInstance, gpuIds, streamCount, results, false);
 
-    // Test each GPU as target, with other GPUs as interference
-    for (size_t targetIdx = 0; targetIdx < gpuIds.size(); targetIdx++) {
-        int targetGpu = gpuIds[targetIdx];
-
-        VERBOSE << "\n--- Testing Target GPU " << targetGpu << " ---" << std::endl;
-
-        // Create buffers (reversed: device -> host)
-        std::vector<const MemcpyBuffer*> deviceBuffers;  // source
-        std::vector<const MemcpyBuffer*> hostBuffers;    // destination
-
-        // 1. Create target streams (this GPU being tested)
-        VERBOSE << "Creating " << streamCount << " target stream(s) for GPU " << targetGpu
-                << " with buffer size " << (streamBufferSize / _MiB) << " MiB" << std::endl;
-        for (int s = 0; s < streamCount; s++) {
-            deviceBuffers.push_back(new DeviceBuffer(streamBufferSize, targetGpu));
-            hostBuffers.push_back(new HostBuffer(streamBufferSize, targetGpu));
-        }
-
-        // 2. Create interference streams (other GPUs with 2x buffer)
-        for (size_t otherIdx = 0; otherIdx < gpuIds.size(); otherIdx++) {
-            if (otherIdx == targetIdx) continue;
-            int otherGpu = gpuIds[otherIdx];
-            VERBOSE << "Creating " << streamCount << " interference stream(s) for GPU " << otherGpu
-                    << " with buffer size " << (interferenceBufferSize / _MiB) << " MiB" << std::endl;
-            for (int s = 0; s < streamCount; s++) {
-                deviceBuffers.push_back(new DeviceBuffer(interferenceBufferSize, otherGpu));
-                hostBuffers.push_back(new HostBuffer(interferenceBufferSize, otherGpu));
-            }
-        }
-
-        // Execute all copies simultaneously (device -> host)
-        MemcpyOperation memcpyInstance(streamLoopCount, new MemcpyInitiatorCE(), PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
-        std::vector<double> allBandwidths = memcpyInstance.doMemcpyVector(deviceBuffers, hostBuffers);
-
-        // Extract target GPU results (first streamCount entries)
-        double targetAggregate = 0.0;
-        VERBOSE << "Target GPU " << targetGpu << " stream bandwidths:" << std::endl;
-        for (int s = 0; s < streamCount; s++) {
-            double bw = allBandwidths[s];
-            bandwidthValues.value(targetIdx, s) = bw;
-            targetAggregate += bw;
-            VERBOSE << "  Stream " << s << ": " << std::fixed << std::setprecision(2) << bw << " GB/s" << std::endl;
-        }
-        bandwidthValues.value(targetIdx, streamCount) = targetAggregate;
-        VERBOSE << "  Aggregate: " << std::fixed << std::setprecision(2) << targetAggregate << " GB/s" << std::endl;
-
-        // Cleanup
-        for (auto buf : hostBuffers) delete buf;
-        for (auto buf : deviceBuffers) delete buf;
+    // Calculate statistics
+    double totalBandwidth = 0.0;
+    for (double bw : results) {
+        totalBandwidth += bw;
     }
 
-    // Print final results
+    // Print results
     OUTPUT << "\n=== AnyToHostCE Results ===" << std::endl;
-    OUTPUT << "GPUs -> CPU " << cpuId << ", " << streamCount << " stream(s) per GPU" << std::endl;
-    OUTPUT << "Target buffer: " << (streamBufferSize / _MiB) << " MiB, Interference buffer: " << (interferenceBufferSize / _MiB) << " MiB" << std::endl;
+    OUTPUT << "Direction: Device -> Host" << std::endl;
+    OUTPUT << "Total streams: " << results.size() << " (" << gpuIds.size() << " GPUs × " << streamCount << " streams)" << std::endl;
     OUTPUT << std::endl;
 
-    OUTPUT << std::setw(10) << "Target GPU";
-    for (int s = 0; s < streamCount; s++) {
-        OUTPUT << std::setw(12) << ("Stream " + std::to_string(s));
-    }
-    OUTPUT << std::setw(12) << "Aggregate" << std::endl;
+    OUTPUT << std::setw(10) << "Stream" << std::setw(10) << "GPU"
+           << std::setw(15) << "Bandwidth" << std::endl;
 
-    for (size_t i = 0; i < gpuIds.size(); i++) {
-        OUTPUT << std::setw(10) << ("GPU " + std::to_string(gpuIds[i]));
+    int streamIdx = 0;
+    for (size_t gpuIdx = 0; gpuIdx < gpuIds.size(); gpuIdx++) {
         for (int s = 0; s < streamCount; s++) {
-            OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, s).value_or(0.0);
+            OUTPUT << std::setw(10) << streamIdx
+                   << std::setw(10) << gpuIds[gpuIdx]
+                   << std::setw(15) << std::fixed << std::setprecision(2)
+                   << results[streamIdx] << " GB/s" << std::endl;
+            streamIdx++;
         }
-        OUTPUT << std::setw(12) << std::fixed << std::setprecision(2) << bandwidthValues.value(i, streamCount).value_or(0.0);
-        OUTPUT << " GB/s" << std::endl;
     }
 
-    // Add results to standard output system (for JSON and perf formatter support)
+    OUTPUT << std::endl;
+    OUTPUT << "Total Aggregate Bandwidth: " << std::fixed << std::setprecision(2)
+           << totalBandwidth << " GB/s" << std::endl;
+
+    // Store results in a matrix for output system
+    PeerValueMatrix<double> bandwidthValues(1, results.size() + 1, key);
+    for (size_t i = 0; i < results.size(); i++) {
+        bandwidthValues.value(0, i) = results[i];
+    }
+    bandwidthValues.value(0, results.size()) = totalBandwidth;
+
     output->addTestcaseResults(bandwidthValues,
-        "memcpy CE GPU -> CPU bandwidth (GB/s)\n"
-        "  Rows: Target GPUs | Columns: Per-stream BW + Aggregate");
+        "memcpy CE GPU->Host bandwidth (GB/s)\n  Columns: Per-stream BW + Aggregate");
 }
-*/
 
 // Write test - copy from src to dst using src context
 void AllToOneWriteCE::run(unsigned long long size, unsigned long long loopCount) {

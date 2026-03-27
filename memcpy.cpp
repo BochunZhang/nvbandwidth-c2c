@@ -28,6 +28,7 @@
 #include "multinode_memcpy.h"
 #endif
 #define WARMUP_COUNT 4
+#define COOLDOWN_COUNT 4
 #include <cassert>
 
 MemcpyBuffer::MemcpyBuffer(size_t bufferSize): bufferSize(bufferSize), buffer(nullptr) {}
@@ -385,6 +386,19 @@ std::vector<double> MemcpyOperation::doMemcpyVector(const std::vector<const Memc
     return nodeHelper->calculateVectorBandwidth(results, dispatchInfo.originalRanks);
 }
 
+std::vector<double> MemcpyOperation::doConcurrentMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers) {
+    MemcpyDispatchInfo dispatchInfo = nodeHelper->dispatchMemcpy(srcBuffers, dstBuffers, ctxPreference);
+    auto results = doConcurrentMemcpyCore(dispatchInfo);
+
+    return nodeHelper->calculateVectorBandwidth(results, dispatchInfo.originalRanks);
+}
+
+// copy engine 测试带宽
+// 有一条 master stream, 其他为 interference stream
+// 每条流做 4x warmup memcpy
+// master stream 在 warmup 后记录 start event
+// interference stream 在 warmup 后, 需要等待 master stream 完成 start event 后开始 memcpy
+// 如果计算 TOTAL_BW, 则 master stream 需要等待所有 interference stream 完成 memcpy 后才记录 end event
 std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
     std::vector<CUstream> streams(info.srcBuffers.size());
     std::vector<CUevent> startEvents(info.srcBuffers.size());
@@ -510,9 +524,9 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
 
             if (bandwidthValue == BandwidthValue::SUM_BW || BandwidthValue::TOTAL_BW || i == 0) {
                 VERBOSE << "\tSample " << n << ": " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << ": " <<
-                    std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s\t"
-                    << "warmup end at: " << std::fixed << std::setprecision(3) << warmupTime << " ms\t"
-                    << "memcpy start at: " << std::fixed << std::setprecision(3) << startTime << " ms\t"
+                    std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s,\t"
+                    << "warmup end at: " << std::fixed << std::setprecision(3) << warmupTime << " ms,"
+                    << "memcpy start at: " << std::fixed << std::setprecision(3) << startTime << " ms,"
                     << "memcpy end at: " << std::fixed << std::setprecision(3) << totalTime << " ms\n";
             }
         }
@@ -561,6 +575,174 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
     } else {
         return {nodeHelper->calculateFirstBandwidth(bandwidthStats)};
     }
+}
+
+// Concurrent multi-stream memcpy with warmup/test/cooldown phases
+// 测量聚合带宽, 允许多条流同时进行 memcpy 操作, 测量多个 CopyEngine 同时运行, 能否提供更高的带宽
+// doMemcpyCore 无法确保全部流同时结束
+// e.g., stream 0 先于 stream 1 结束, 如果将各 stream 的太快加和, stream 1 在 stream 0 结束后独占带宽导致测量结果偏大,
+// 如果以 stream 1 的结束时间计算总带宽, 则可能导致结果偏小
+// 新的测量策略:
+// 不再区分 master / interference
+// 每条流做 4x warmup memcpy, Nx test memcpy, 4x cooldown memcpy
+// 计算每条流在 test memcpy 期间的带宽求和
+// 只要确保 cooldown 结束时其余 stream 上的 test memcpy 已经结束 
+std::vector<double> MemcpyOperation::doConcurrentMemcpyCore(MemcpyDispatchInfo &info) {
+    std::vector<CUstream> streams(info.srcBuffers.size());
+    std::vector<CUevent> warmupStartEvents(info.srcBuffers.size());
+    std::vector<CUevent> testStartEvents(info.srcBuffers.size());
+    std::vector<CUevent> cooldownStartEvents(info.srcBuffers.size());
+    std::vector<CUevent> cooldownEndEvents(info.srcBuffers.size());
+    std::vector<PerformanceStatistic> bandwidthStats(info.srcBuffers.size());
+    std::vector<PerformanceStatistic> aggregateStats(info.srcBuffers.size() / hostToAnyStreamCount);
+    std::vector<size_t> adjustedCopySizes(info.srcBuffers.size());
+    PerformanceStatistic totalBandwidth;
+    CUevent totalEnd;
+    std::vector<size_t> finalCopySize(info.srcBuffers.size());
+
+    for (int i = 0; i < info.srcBuffers.size(); i++) {
+        CU_ASSERT(cuCtxSetCurrent(info.contexts[i]));
+        // allocate the per simulaneous copy resources
+        CU_ASSERT(cuStreamCreate(&streams[i], CU_STREAM_NON_BLOCKING));
+        info.streams.push_back(streams[i]);
+        CU_ASSERT(cuEventCreate(&warmupStartEvents[i], CU_EVENT_DEFAULT));
+        CU_ASSERT(cuEventCreate(&testStartEvents[i], CU_EVENT_DEFAULT));
+        CU_ASSERT(cuEventCreate(&cooldownStartEvents[i], CU_EVENT_DEFAULT));
+        CU_ASSERT(cuEventCreate(&cooldownEndEvents[i], CU_EVENT_DEFAULT));
+        // Get the final copy size that will be used.
+        // CE and SM copy sizes will differ due to possible truncation
+        // during SM copies.
+        finalCopySize[i] = memcpyInitiator->getAdjustedCopySize(info.srcBuffers[i]->getBufferSize(), streams[i]);
+        info.adjustedCopySizes.push_back(finalCopySize[i]);
+    }
+    info.nodeHelper = nodeHelper;
+
+    if (info.contexts.size() > 0) {
+        CU_ASSERT(cuCtxSetCurrent(info.contexts[0]));
+    }
+    // If no memcpy operations are happening on this node, let's still record a totalEnd event to simplify code
+    CU_ASSERT(cuEventCreate(&totalEnd, CU_EVENT_DEFAULT));
+
+    // This loop is for sampling the testcase (which itself has a loop count)
+    for (unsigned int n = 0; n < averageLoopCount; n++) {
+        nodeHelper->streamBlockerReset();
+        nodeHelper->synchronizeProcess();
+
+        memcpyInitiator->memsetPattern(info);
+
+        // ========== Phase 1: Warmup ==========
+        // block stream, and enqueue copy
+        for (int i = 0; i < info.srcBuffers.size(); i++) {
+            CU_ASSERT(cuCtxSetCurrent(info.contexts[i]));
+
+            nodeHelper->streamBlockerBlock(info.streams[i]);
+
+            // record warmup start event
+            CU_ASSERT(cuEventRecord(warmupStartEvents[i], info.streams[i]));
+
+            // warmup
+            MemcpyDescriptor warmupDesc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), WARMUP_COUNT);
+            memcpyInitiator->memcpyFunc(warmupDesc);
+        }
+
+        // ========== Phase 2: Test ==========
+        // All streams are synchronized by streamBlockerRelease(), no master stream needed
+        for (int i = 0; i < info.srcBuffers.size(); i++) {
+            CU_ASSERT(cuCtxSetCurrent(info.contexts[i]));
+            ASSERT(info.srcBuffers[i]->getBufferSize() == info.dstBuffers[i]->getBufferSize());
+
+            // Record test start event (all streams start simultaneously after streamBlockerRelease)
+            CU_ASSERT(cuEventRecord(testStartEvents[i], info.streams[i]));
+
+            // Execute test phase
+            MemcpyDescriptor testDesc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), loopCount);
+            adjustedCopySizes[i] = memcpyInitiator->memcpyFunc(testDesc);
+        }
+
+        // ========== Phase 3: Cooldown ==========
+        for (int i = 0; i < info.srcBuffers.size(); i++) {
+            CU_ASSERT(cuCtxSetCurrent(info.contexts[i]));
+            MemcpyDescriptor cooldownDesc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), COOLDOWN_COUNT);
+            memcpyInitiator->memcpyFunc(cooldownDesc);
+            CU_ASSERT(cuEventRecord(cooldownEndEvents[i], info.streams[i]));
+
+            if (bandwidthValue == BandwidthValue::TOTAL_BW && i != 0) {
+                // make stream0 wait on the all the others so we can measure total completion time
+                CU_ASSERT(cuStreamWaitEvent(info.streams[0], cooldownEndEvents[i], 0));
+            }
+        }
+
+        // record the total end - only valid if BandwidthValue::TOTAL_BW is used due to StreamWaitEvent above
+        if (info.srcBuffers.size() > 0) {
+            CU_ASSERT(cuCtxSetCurrent(info.contexts[0]));
+            CU_ASSERT(cuEventRecord(totalEnd, info.streams[0]));
+        }
+
+        // unblock the streams
+        nodeHelper->streamBlockerRelease();
+
+        for (CUstream stream : info.streams) {
+            CU_ASSERT(nodeHelper->streamSynchronizeWrapper(stream));
+        }
+
+        nodeHelper->synchronizeProcess();
+
+        if (!skipVerification) {
+            memcpyInitiator->memcmpPattern(info);
+        }
+
+        // ========== Bandwidth calculation: only measure Test phase ==========
+        if (bandwidthValue == BandwidthValue::CONCURRENT_BW) {
+            std::vector<unsigned long long> aggregate(info.srcBuffers.size() / hostToAnyStreamCount, 0);
+            for (int i = 0; i < bandwidthStats.size(); i++) {
+                float warmTime = 0.0f, testTime = 0.0f, coolTime = 0.0f;
+                CU_ASSERT(cuEventElapsedTime(&warmTime, warmupStartEvents[i], testStartEvents[i]));
+                CU_ASSERT(cuEventElapsedTime(&testTime, testStartEvents[i], cooldownStartEvents[i]));
+                CU_ASSERT(cuEventElapsedTime(&coolTime, cooldownStartEvents[i], cooldownEndEvents[i]));
+                double elapsedTestInUs = ((double) testTime * 1000.0);
+                unsigned long long bandwidth = (adjustedCopySizes[i] * loopCount * 1000ull * 1000ull) / (unsigned long long) elapsedTestInUs;
+
+                bandwidth = memcpyInitiator->getAdjustedBandwidth(bandwidth);   // calculate bandwidth for each stream
+
+                bandwidthStats[i]((double) bandwidth);
+                aggregate[i / hostToAnyStreamCount] += bandwidth;
+
+                VERBOSE << "\tSample " << n << ": " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << ": " 
+                    << "stream " << i % hostToAnyStreamCount << ": "
+                    << std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s, "
+                    << "warm: " << std::fixed << std::setprecision(3) << warmTime << " ms, "
+                    << "test: " << std::fixed << std::setprecision(3) << testTime << " ms, "
+                    << "cool: " << std::fixed << std::setprecision(3) << coolTime << " ms\n";
+                
+                if (i % hostToAnyStreamCount == hostToAnyStreamCount - 1) {
+                    aggregateStats[i / hostToAnyStreamCount]((double)(aggregate[i] / hostToAnyStreamCount));
+                    VERBOSE << "\t\tAggregate bandwidth: " 
+                        << std::fixed << std::setprecision(2) << (double)aggregate[i / hostToAnyStreamCount] * 1e-9 << " GB/s\n";
+                }
+            }
+        }
+    }
+
+    // cleanup
+    CU_ASSERT(cuEventDestroy(totalEnd));
+
+    for (int i = 0; i < info.srcBuffers.size(); i++) {
+        CU_ASSERT(cuStreamDestroy(info.streams[i]));
+        CU_ASSERT(cuEventDestroy(warmupStartEvents[i]));
+        CU_ASSERT(cuEventDestroy(warmupEndEvents[i]));
+        CU_ASSERT(cuEventDestroy(testStartEvents[i]));
+        CU_ASSERT(cuEventDestroy(testEndEvents[i]));
+        CU_ASSERT(cuEventDestroy(cooldownEndEvents[i]));
+    }
+
+    if (bandwidthValue == BandwidthValue::CONCURRENT_BW) {
+        std::vector<double> ret;
+        for (auto stat : aggregateStats) {
+            ret.push_back(stat.returnAppropriateMetric() * 1e-9);
+        }
+        return ret;
+    }
+    return {};
 }
 
 size_t MemcpyInitiatorSM::memcpyFunc(MemcpyDescriptor &desc) {

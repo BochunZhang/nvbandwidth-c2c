@@ -307,3 +307,54 @@ void Testcase::allHostBidirHelper(unsigned long long size, MemcpyOperation &memc
     }
 }
 
+void Testcase::anyHostHelper(unsigned long long size, MemcpyOperation &memcpyInstance, std::vector<int> gpuIds, int streamCountPerGpu, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost) {
+    // VERBOSE << "\n=== anyHostHelper Configuration ===" << std::endl;
+    // VERBOSE << "Direction: " << (sourceIsHost ? "Host -> Device" : "Device -> Host") << std::endl;
+    // VERBOSE << "GPUs: ";
+    // for (int gpuId : gpuIds) {
+    //     VERBOSE << gpuId << " ";
+    // }
+    // VERBOSE << std::endl;
+    // VERBOSE << "Streams per GPU: " << streamCountPerGpu << std::endl;
+    // VERBOSE << "Buffer size per stream: " << (size / _MiB) << " MiB" << std::endl;
+    // VERBOSE << "Total streams: " << (gpuIds.size() * streamCountPerGpu) << std::endl;
+    // VERBOSE << "====================================\n" << std::endl;
+
+    std::vector<const MemcpyBuffer*> deviceBuffers;
+    std::vector<const MemcpyBuffer*> hostBuffers;
+
+    // Create buffers for all streams
+    int streamIdx = 0;
+    for (int gpuId : gpuIds) {
+        for (int s = 0; s < streamCountPerGpu; s++) {
+            VERBOSE << "  Stream " << streamIdx++ << ": GPU " << gpuId
+                    << " <-> Host (NUMA affinity for GPU " << gpuId << "), "
+                    << (size / _MiB) << " MiB" << std::endl;
+            deviceBuffers.push_back(new DeviceBuffer(size, gpuId));
+            hostBuffers.push_back(new HostBuffer(size, gpuId));
+        }
+    }
+
+    VERBOSE << "Executing memory copy on all " << deviceBuffers.size() << " streams..." << std::endl;
+
+    // Execute all streams concurrently with warmup/test/cooldown phases
+    std::vector<double> result;
+    if (sourceIsHost) {
+        result = memcpyInstance.doConcurrentMemcpyVector(hostBuffers, deviceBuffers);
+    } else {
+        result = memcpyInstance.doConcurrentMemcpyVector(deviceBuffers, hostBuffers);
+    }
+
+    for (size_t i = 0; i < result.size(); i++) {
+        bandwidthValues.value(0, gpuIds[i]) = result[i];
+    }
+
+    // Cleanup
+    for (auto node : deviceBuffers) {
+        delete node;
+    }
+    for (auto node : hostBuffers) {
+        delete node;
+    }
+}
+

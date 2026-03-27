@@ -212,6 +212,7 @@ class MemcpyOperation : public MemoryOperation {
             SUM_BW,            // Use the sum of all bandwidths from the simultaneous copy list
             TOTAL_BW,          // Use the total bandwidth of all copies, based on total time and total bytes copied
             VECTOR_BW,         // Return bandwidths of each copy separately
+            CONCURRENT_BW,     // Returns the total bandwidth of the co-running streams
     };
 
     ContextPreference ctxPreference;
@@ -234,7 +235,15 @@ class MemcpyOperation : public MemoryOperation {
     // Lists of paired nodes will be executed sumultaneously
     // context of srcBuffers is preferred (if not host) unless otherwise specified
     std::vector<double> doMemcpyCore(MemcpyDispatchInfo &info);
+
+    // Concurrent multi-stream testing with warmup/test/cooldown phases
+    // Ensures all streams compete for bandwidth during the entire test phase
+    std::vector<double> doConcurrentMemcpyCore(MemcpyDispatchInfo &info);
+
     std::vector<double> doMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers);
+
+    // Concurrent version wrapper for vector results
+    std::vector<double> doConcurrentMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers);
     double doMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers);
     double doMemcpy(const MemcpyBuffer &srcBuffer, const MemcpyBuffer &dstBuffer);
 };
