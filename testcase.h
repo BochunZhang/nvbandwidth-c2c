@@ -223,8 +223,8 @@ class HostToAnyCE: public Testcase {
     HostToAnyCE() : Testcase("host_to_any_ce",
             "\tConfigurable test for CPU->GPU communication via NVLink-C2C with multi-stream.\n"
             "\tAll streams are measured concurrently to evaluate aggregate bandwidth.\n"
-            "\tUse --hostToAnyGpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
-            "\tUse --hostToAnyStreams to specify number of streams per GPU\n"
+            "\tUse --gpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
+            "\tUse --stream to specify number of streams per GPU\n"
             "\tReports: per-stream bandwidth and aggregate bandwidth") {}
     virtual ~HostToAnyCE() {}
     void run(unsigned long long size, unsigned long long loopCount);
@@ -237,8 +237,8 @@ class HostToAnyCE: public Testcase {
 //     AnyToHostCE() : Testcase("any_to_host_ce",
 //             "\tConfigurable test for GPU->CPU communication via NVLink-C2C with multi-stream.\n"
 //             "\tAll streams are measured concurrently to evaluate aggregate bandwidth.\n"
-//             "\tUse --hostToAnyGpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
-//             "\tUse --hostToAnyStreams to specify number of streams per GPU\n"
+//             "\tUse --gpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
+//             "\tUse --stream to specify number of streams per GPU\n"
 //             "\tReports: per-stream bandwidth and aggregate bandwidth") {}
 //     virtual ~AnyToHostCE() {}
 //     void run(unsigned long long size, unsigned long long loopCount);
@@ -430,8 +430,8 @@ class HostToAnySM: public Testcase {
             "\tConfigurable test for CPU->GPU communication via NVLink-C2C using SM kernels with interference.\n"
             "\tFor each target GPU, measures bandwidth while other GPUs generate interference traffic (2x buffer).\n"
             "\tUse --hostToAnyCpu to specify CPU (0 or 1)\n"
-            "\tUse --hostToAnyGpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
-            "\tUse --hostToAnyStreams to specify number of streams per GPU\n"
+            "\tUse --gpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
+            "\tUse --stream to specify number of streams per GPU\n"
             "\tUse --hostToAnyStreamBufferSize to specify buffer size per stream in MiB\n"
             "\tUse --hostToAnyStreamLoopCount to specify loop count per stream\n"
             "\tReports: per-stream bandwidth for each target GPU with aggregate") {}
@@ -447,8 +447,8 @@ class AnyToHostSM: public Testcase {
             "\tConfigurable test for GPU->CPU communication via NVLink-C2C using SM kernels with interference.\n"
             "\tFor each target GPU, measures bandwidth while other GPUs generate interference traffic (2x buffer).\n"
             "\tUse --hostToAnyCpu to specify CPU (0 or 1)\n"
-            "\tUse --hostToAnyGpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
-            "\tUse --hostToAnyStreams to specify number of streams per GPU\n"
+            "\tUse --gpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
+            "\tUse --stream to specify number of streams per GPU\n"
             "\tUse --hostToAnyStreamBufferSize to specify buffer size per stream in MiB\n"
             "\tUse --hostToAnyStreamLoopCount to specify loop count per stream\n"
             "\tReports: per-stream bandwidth for each target GPU with aggregate") {}

@@ -47,19 +47,23 @@ const unsigned int _2MiB = 2 * _MiB;
 const unsigned int numThreadPerBlock = 512;
 const unsigned int strideLen = 16; /* cacheLine size 128 Bytes, 16 words */
 const unsigned long latencyMemAccessCnt = 1000000; /* 1M total read accesses to gauge latency */
+const unsigned int defaultStreamCount = 1;
+
 extern int deviceCount;
+extern unsigned int streamCount;
 extern unsigned int averageLoopCount;
 extern bool disableAffinity;
 extern bool skipVerification;
 extern bool useMean;
 extern bool jsonOutput;
+
 // Verbosity
 extern bool verbose;
 extern bool perfFormatter;
 
 // HostToAnyCE configuration parameters
-extern std::vector<int> hostToAnyGpuIds;  // GPU IDs for HostToAny test
-extern int hostToAnyStreamCount;     // Number of streams per GPU
+
+extern std::vector<int> gpuIds;  // GPU IDs for HostToAny test
 
 #ifdef MULTINODE
 extern int localDevice;

@@ -35,6 +35,7 @@
 namespace opt = boost::program_options;
 
 int deviceCount;
+unsigned int streamCount;
 unsigned int averageLoopCount;
 unsigned long long bufferSize;
 unsigned long long loopCount;
@@ -45,9 +46,7 @@ bool skipVerification;
 bool useMean;
 bool perfFormatter;
 
-// HostToAnyCE configuration parameters
-std::vector<int> hostToAnyGpuIds;  // Empty by default (will use all GPUs if not specified)
-int hostToAnyStreamCount = 1;  // Default 1 stream per GPU
+std::vector<int> gpuIds;  // Empty by default (will use all GPUs if not specified)
 
 Verbosity VERBOSE(verbose);
 Verbosity OUTPUT(shouldOutput);
@@ -224,8 +223,8 @@ int main(int argc, char **argv) {
         ("testSamples,i", opt::value<unsigned int>(&averageLoopCount)->default_value(defaultAverageLoopCount), "Iterations of the benchmark")
         ("useMean,m", opt::bool_switch(&useMean)->default_value(false), "Use mean instead of median for results")
         ("json,j", opt::bool_switch(&jsonOutput)->default_value(false), "Print output in json format instead of plain text.")
-        ("hostToAnyGpus", opt::value<std::vector<int>>(&hostToAnyGpuIds)->multitoken(), "GPU IDs for HostToAny test (space-separated, default: all GPUs)")
-        ("hostToAnyStreams", opt::value<int>(&hostToAnyStreamCount)->default_value(1), "Number of streams per GPU for HostToAny test");
+        ("gpus", opt::value<std::vector<int>>(&gpuIds)->multitoken()->default_value(std::vector<int>(0, 1))), "GPU IDs for HostToAny/AnyToHost test (space-separated, default: all GPUs)")
+        ("stream", opt::value<unsigned int>(&streamCount)->default_value(1), "Number of streams per GPU for HostToAny/AnyToHost test");
 
     opt::options_description all_opts("");
     all_opts.add(visible_opts);

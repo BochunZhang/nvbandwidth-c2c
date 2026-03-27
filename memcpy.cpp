@@ -594,7 +594,7 @@ std::vector<double> MemcpyOperation::doConcurrentMemcpyCore(MemcpyDispatchInfo &
     std::vector<CUevent> cooldownStartEvents(info.srcBuffers.size());
     std::vector<CUevent> cooldownEndEvents(info.srcBuffers.size());
     std::vector<PerformanceStatistic> bandwidthStats(info.srcBuffers.size());
-    std::vector<PerformanceStatistic> aggregateStats(info.srcBuffers.size() / hostToAnyStreamCount);
+    std::vector<PerformanceStatistic> aggregateStats(gpuIds.size());
     std::vector<size_t> adjustedCopySizes(info.srcBuffers.size());
     PerformanceStatistic totalBandwidth;
     CUevent totalEnd;
@@ -690,7 +690,7 @@ std::vector<double> MemcpyOperation::doConcurrentMemcpyCore(MemcpyDispatchInfo &
 
         // ========== Bandwidth calculation: only measure Test phase ==========
         if (bandwidthValue == BandwidthValue::CONCURRENT_BW) {
-            std::vector<unsigned long long> aggregate(info.srcBuffers.size() / hostToAnyStreamCount, 0);
+            std::vector<unsigned long long> aggregate(gpuIds.size(), 0);
             for (int i = 0; i < bandwidthStats.size(); i++) {
                 float warmTime = 0.0f, testTime = 0.0f, coolTime = 0.0f;
                 CU_ASSERT(cuEventElapsedTime(&warmTime, warmupStartEvents[i], testStartEvents[i]));
@@ -702,19 +702,19 @@ std::vector<double> MemcpyOperation::doConcurrentMemcpyCore(MemcpyDispatchInfo &
                 bandwidth = memcpyInitiator->getAdjustedBandwidth(bandwidth);   // calculate bandwidth for each stream
 
                 bandwidthStats[i]((double) bandwidth);
-                aggregate[i / hostToAnyStreamCount] += bandwidth;
+                aggregate[i / streamCount] += bandwidth;
 
                 VERBOSE << "\tSample " << n << ": " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << ": " 
-                    << "stream " << i % hostToAnyStreamCount << ": "
+                    << "stream " << i % streamCount << ": "
                     << std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s, "
                     << "warm: " << std::fixed << std::setprecision(3) << warmTime << " ms, "
                     << "test: " << std::fixed << std::setprecision(3) << testTime << " ms, "
                     << "cool: " << std::fixed << std::setprecision(3) << coolTime << " ms\n";
                 
-                if (i % hostToAnyStreamCount == hostToAnyStreamCount - 1) {
-                    aggregateStats[i / hostToAnyStreamCount]((double)(aggregate[i] / hostToAnyStreamCount));
+                if (i % streamCount == streamCount - 1) {
+                    aggregateStats[i / streamCount]((double)(aggregate[i] / streamCount));
                     VERBOSE << "\t\tAggregate bandwidth: " 
-                        << std::fixed << std::setprecision(2) << (double)aggregate[i / hostToAnyStreamCount] * 1e-9 << " GB/s\n";
+                        << std::fixed << std::setprecision(2) << (double)aggregate[i / streamCount] * 1e-9 << " GB/s\n";
                 }
             }
         }

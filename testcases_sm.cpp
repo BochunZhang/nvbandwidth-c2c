@@ -330,8 +330,7 @@ void HostToAllBidirSM::run(unsigned long long size, unsigned long long loopCount
 void HostToAnySM::run(unsigned long long size, unsigned long long loopCount) {
     // Use configured values or defaults
     int cpuId = hostToAnyCpuId;
-    std::vector<int> gpuIds = hostToAnyGpuIds;
-    int streamCount = hostToAnyStreamCount;
+    std::vector<int> gpuIds = ::gpuIds;
     unsigned long long streamBufferSize = (hostToAnyStreamBufferSize == 0) ? size : hostToAnyStreamBufferSize * _MiB;
     unsigned long long streamLoopCount = (hostToAnyStreamLoopCount == 0) ? loopCount : hostToAnyStreamLoopCount;
     unsigned long long interferenceBufferSize = 2 * streamBufferSize;  // 2x buffer for interference streams
@@ -458,8 +457,7 @@ void HostToAnySM::run(unsigned long long size, unsigned long long loopCount) {
 void AnyToHostSM::run(unsigned long long size, unsigned long long loopCount) {
     // Use configured values or defaults
     int cpuId = hostToAnyCpuId;
-    std::vector<int> gpuIds = hostToAnyGpuIds;
-    int streamCount = hostToAnyStreamCount;
+    std::vector<int> gpuIds = ::gpuIds;
     unsigned long long streamBufferSize = (hostToAnyStreamBufferSize == 0) ? size : hostToAnyStreamBufferSize * _MiB;
     unsigned long long streamLoopCount = (hostToAnyStreamLoopCount == 0) ? loopCount : hostToAnyStreamLoopCount;
     unsigned long long interferenceBufferSize = 2 * streamBufferSize;  // 2x buffer for interference streams
