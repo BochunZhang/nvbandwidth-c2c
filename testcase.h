@@ -232,17 +232,17 @@ class HostToAnyCE: public Testcase {
 
 // Any to Host CE memcpy: configurable GPU->CPU communication test with multiple streams
 // All streams are measured concurrently (no interference concept)
-class AnyToHostCE: public Testcase {
- public:
-    AnyToHostCE() : Testcase("any_to_host_ce",
-            "\tConfigurable test for GPU->CPU communication via NVLink-C2C with multi-stream.\n"
-            "\tAll streams are measured concurrently to evaluate aggregate bandwidth.\n"
-            "\tUse --hostToAnyGpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
-            "\tUse --hostToAnyStreams to specify number of streams per GPU\n"
-            "\tReports: per-stream bandwidth and aggregate bandwidth") {}
-    virtual ~AnyToHostCE() {}
-    void run(unsigned long long size, unsigned long long loopCount);
-};
+// class AnyToHostCE: public Testcase {
+//  public:
+//     AnyToHostCE() : Testcase("any_to_host_ce",
+//             "\tConfigurable test for GPU->CPU communication via NVLink-C2C with multi-stream.\n"
+//             "\tAll streams are measured concurrently to evaluate aggregate bandwidth.\n"
+//             "\tUse --hostToAnyGpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
+//             "\tUse --hostToAnyStreams to specify number of streams per GPU\n"
+//             "\tReports: per-stream bandwidth and aggregate bandwidth") {}
+//     virtual ~AnyToHostCE() {}
+//     void run(unsigned long long size, unsigned long long loopCount);
+// };
 
 // All to One CE Write memcpy using cuMemcpyAsync
 class AllToOneWriteCE: public Testcase {

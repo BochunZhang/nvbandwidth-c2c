@@ -79,7 +79,7 @@ std::vector<Testcase*> createTestcases() {
         new AllToHostBidirCE(),
         new HostToAllCE(),
         new HostToAllBidirCE(),
-        // new HostToAnyCE(),  // TODO: enable after verbose log testing
+        new HostToAnyCE(),
         // new AnyToHostCE(),  // TODO: enable after verbose log testing
         new AllToOneWriteCE(),
         new AllToOneReadCE(),
