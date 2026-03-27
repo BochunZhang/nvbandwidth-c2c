@@ -271,14 +271,6 @@ void HostToAllBidirCE::run(unsigned long long size, unsigned long long loopCount
 }
 
 void HostToAnyCE::run(unsigned long long size, unsigned long long loopCount) {
-    // Use configured GPU IDs, or default to all GPUs
-    std::vector<int> gpuIds = ::gpuIds;
-    if (gpuIds.empty()) {
-        for (int i = 0; i < deviceCount; i++) {
-            gpuIds.push_back(i);
-        }
-    }
-
     VERBOSE << "\n=== HostToAnyCE Test Configuration ===" << std::endl;
     VERBOSE << "GPU IDs: ";
     for (int gpuId : gpuIds) {
