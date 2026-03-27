@@ -524,7 +524,7 @@ std::vector<double> MemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info) {
 
             if (bandwidthValue == BandwidthValue::SUM_BW || BandwidthValue::TOTAL_BW || i == 0) {
                 VERBOSE << "\tSample " << n << ": " << info.srcBuffers[i]->getBufferString() << " -> " << info.dstBuffers[i]->getBufferString() << ": " <<
-                    std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s,\t"
+                    std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s, "
                     << "warmup end at: " << std::fixed << std::setprecision(3) << warmupTime << " ms,"
                     << "memcpy start at: " << std::fixed << std::setprecision(3) << startTime << " ms,"
                     << "memcpy end at: " << std::fixed << std::setprecision(3) << totalTime << " ms\n";
@@ -692,10 +692,11 @@ std::vector<double> MemcpyOperation::doConcurrentMemcpyCore(MemcpyDispatchInfo &
         if (bandwidthValue == BandwidthValue::CONCURRENT_BW) {
             std::vector<unsigned long long> aggregate(gpuIds.size(), 0);
             for (int i = 0; i < bandwidthStats.size(); i++) {
-                float warmTime = 0.0f, testTime = 0.0f, coolTime = 0.0f;
+                float warmTime = 0.0f, testTime = 0.0f, coolTime = 0.0f, totalTime = 0.0f;
                 CU_ASSERT(cuEventElapsedTime(&warmTime, warmupStartEvents[i], testStartEvents[i]));
                 CU_ASSERT(cuEventElapsedTime(&testTime, testStartEvents[i], cooldownStartEvents[i]));
                 CU_ASSERT(cuEventElapsedTime(&coolTime, cooldownStartEvents[i], cooldownEndEvents[i]));
+                CU_ASSERT(cuEventElapsedTime(&totalTime, warmupStartEvents[i], cooldownEndEvents[i]));
                 double elapsedTestInUs = ((double) testTime * 1000.0);
                 unsigned long long bandwidth = (adjustedCopySizes[i] * loopCount * 1000ull * 1000ull) / (unsigned long long) elapsedTestInUs;
 
@@ -709,7 +710,8 @@ std::vector<double> MemcpyOperation::doConcurrentMemcpyCore(MemcpyDispatchInfo &
                     << std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s, "
                     << "warm: " << std::fixed << std::setprecision(3) << warmTime << " ms, "
                     << "test: " << std::fixed << std::setprecision(3) << testTime << " ms, "
-                    << "cool: " << std::fixed << std::setprecision(3) << coolTime << " ms\n";
+                    << "cool: " << std::fixed << std::setprecision(3) << coolTime << " ms, "
+                    << "total: " << std::fixed << std::setprecision(3) << totalTime << " ms\n";
                 
                 if (i % streamCount == streamCount - 1) {
                     aggregateStats[i / streamCount]((double)(aggregate[i] / streamCount));
