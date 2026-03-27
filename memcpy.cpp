@@ -729,9 +729,8 @@ std::vector<double> MemcpyOperation::doConcurrentMemcpyCore(MemcpyDispatchInfo &
     for (int i = 0; i < info.srcBuffers.size(); i++) {
         CU_ASSERT(cuStreamDestroy(info.streams[i]));
         CU_ASSERT(cuEventDestroy(warmupStartEvents[i]));
-        CU_ASSERT(cuEventDestroy(warmupEndEvents[i]));
         CU_ASSERT(cuEventDestroy(testStartEvents[i]));
-        CU_ASSERT(cuEventDestroy(testEndEvents[i]));
+        CU_ASSERT(cuEventDestroy(cooldownStartEvents[i]));
         CU_ASSERT(cuEventDestroy(cooldownEndEvents[i]));
     }
 
