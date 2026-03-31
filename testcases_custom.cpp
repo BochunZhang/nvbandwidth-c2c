@@ -209,9 +209,9 @@ void DeviceToHostCESM::run(unsigned long long size, unsigned long long loopCount
 // device_to_device_read_ce_ce: two CE streams per peer pair (NVLink P2P)
 // ---------------------------------------------------------------------------
 void DeviceToDeviceReadCECE::run(unsigned long long size, unsigned long long loopCount) {
-    PeerValueMatrix<double> bw0  (1, deviceCount, key + "_ce1");
-    PeerValueMatrix<double> bw1  (1, deviceCount, key + "_ce2");
-    PeerValueMatrix<double> bwTotal(1, deviceCount, key + "_total");
+    PeerValueMatrix<double> bw0  (deviceCount, deviceCount, key + "_ce1");
+    PeerValueMatrix<double> bw1  (deviceCount, deviceCount, key + "_ce2");
+    PeerValueMatrix<double> bwTotal(deviceCount, deviceCount, key + "_total");
 
     std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
     initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
@@ -252,9 +252,9 @@ void DeviceToDeviceReadCECE::run(unsigned long long size, unsigned long long loo
 // device_to_device_write_ce_ce: two CE streams per peer pair (NVLink P2P)
 // ---------------------------------------------------------------------------
 void DeviceToDeviceWriteCECE::run(unsigned long long size, unsigned long long loopCount) {
-    PeerValueMatrix<double> bw0  (1, deviceCount, key + "_ce1");
-    PeerValueMatrix<double> bw1  (1, deviceCount, key + "_ce2");
-    PeerValueMatrix<double> bwTotal(1, deviceCount, key + "_total");
+    PeerValueMatrix<double> bw0  (deviceCount, deviceCount, key + "_ce1");
+    PeerValueMatrix<double> bw1  (deviceCount, deviceCount, key + "_ce2");
+    PeerValueMatrix<double> bwTotal(deviceCount, deviceCount, key + "_total");
 
     std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
     initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
@@ -294,9 +294,9 @@ void DeviceToDeviceWriteCECE::run(unsigned long long size, unsigned long long lo
 // device_to_device_read_ce_sm: CE + SM streams per peer pair (NVLink P2P)
 // ---------------------------------------------------------------------------
 void DeviceToDeviceReadCESM::run(unsigned long long size, unsigned long long loopCount) {
-    PeerValueMatrix<double> bw0  (1, deviceCount, key + "_ce");
-    PeerValueMatrix<double> bw1  (1, deviceCount, key + "_sm");
-    PeerValueMatrix<double> bwTotal(1, deviceCount, key + "_total");
+    PeerValueMatrix<double> bw0  (deviceCount, deviceCount, key + "_ce");
+    PeerValueMatrix<double> bw1  (deviceCount, deviceCount, key + "_sm");
+    PeerValueMatrix<double> bwTotal(deviceCount, deviceCount, key + "_total");
 
     std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
     initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
@@ -338,9 +338,9 @@ void DeviceToDeviceReadCESM::run(unsigned long long size, unsigned long long loo
 // device_to_device_write_ce_sm: CE + SM streams per peer pair (NVLink P2P)
 // ---------------------------------------------------------------------------
 void DeviceToDeviceWriteCESM::run(unsigned long long size, unsigned long long loopCount) {
-    PeerValueMatrix<double> bw0  (1, deviceCount, key + "_ce");
-    PeerValueMatrix<double> bw1  (1, deviceCount, key + "_sm");
-    PeerValueMatrix<double> bwTotal(1, deviceCount, key + "_total");
+    PeerValueMatrix<double> bw0  (deviceCount, deviceCount, key + "_ce");
+    PeerValueMatrix<double> bw1  (deviceCount, deviceCount, key + "_sm");
+    PeerValueMatrix<double> bwTotal(deviceCount, deviceCount, key + "_total");
 
     std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
     initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();

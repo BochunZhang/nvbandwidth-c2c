@@ -71,7 +71,7 @@ void memsetPatternHelper(CUstream stream, CUdeviceptr buffer, unsigned long long
 
     // Launch the memset kernel
     CU_ASSERT(memsetKernel(CU_STREAM_PER_THREAD, buffer, d_pattern, num_elements, num_pattern_elements));
-    VERBOSE << "nodeHelper: " << nodeHelper.get() << std::endl;
+    // VERBOSE << "nodeHelper: " << nodeHelper.get() << std::endl;
     CU_ASSERT(nodeHelper->streamSynchronizeWrapper(CU_STREAM_PER_THREAD));
 
     CU_ASSERT(cuMemFreeHost((void*)h_pattern));
