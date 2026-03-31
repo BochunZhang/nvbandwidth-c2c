@@ -40,7 +40,7 @@ class Testcase {
     void allHostHelper(unsigned long long size, MemcpyOperation &memcpyInstance, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost);
     void allHostBidirHelper(unsigned long long size, MemcpyOperation &memcpyInstance, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost);
     void allHostAggregateHelper(unsigned long long size, MemcpyOperation &memcpyInstance, double &result, bool sourceIsHost);
-    void anyHostHelper(unsigned long long size, MemcpyOperation &memcpyInstance, std::vector<int> gpuIds, int streamCountPerGpu, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost);
+    void anyHostHelper(unsigned long long size, CustomMemcpyOperation &memcpyInstance, std::vector<int> gpuIds, int streamCountPerGpu, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost);
     void latencyHelper(const MemcpyBuffer &dataBuffer, bool measureDeviceToDeviceLatency);
 
  public:
@@ -216,22 +216,22 @@ class HostToAllBidirCE: public Testcase {
 };
 
 
-// Host to Any CE memcpy: configurable CPU-GPU communication test with multiple streams
-// All streams are measured concurrently (no interference concept)
-class HostToAnyCE: public Testcase {
- public:
-    HostToAnyCE() : Testcase("host_to_any_ce",
-            "\tConfigurable test for CPU->GPU communication via NVLink-C2C with multi-stream.\n"
-            "\tAll streams are measured concurrently to evaluate aggregate bandwidth.\n"
-            "\tUse --gpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
-            "\tUse --stream to specify number of streams per GPU\n"
-            "\tReports: per-stream bandwidth and aggregate bandwidth") {}
-    virtual ~HostToAnyCE() {}
-    void run(unsigned long long size, unsigned long long loopCount);
-};
+// // Host to Any CE memcpy: configurable CPU-GPU communication test with multiple streams
+// // All streams are measured concurrently (no interference concept)
+// class HostToAnyCE: public Testcase {
+//  public:
+//     HostToAnyCE() : Testcase("host_to_any_ce",
+//             "\tConfigurable test for CPU->GPU communication via NVLink-C2C with multi-stream.\n"
+//             "\tAll streams are measured concurrently to evaluate aggregate bandwidth.\n"
+//             "\tUse --gpus to specify GPU IDs (comma-separated, e.g., 0,1,2,3)\n"
+//             "\tUse --stream to specify number of streams per GPU\n"
+//             "\tReports: per-stream bandwidth and aggregate bandwidth") {}
+//     virtual ~HostToAnyCE() {}
+//     void run(unsigned long long size, unsigned long long loopCount);
+// };
 
-// Any to Host CE memcpy: configurable GPU->CPU communication test with multiple streams
-// All streams are measured concurrently (no interference concept)
+// // Any to Host CE memcpy: configurable GPU->CPU communication test with multiple streams
+// // All streams are measured concurrently (no interference concept)
 // class AnyToHostCE: public Testcase {
 //  public:
 //     AnyToHostCE() : Testcase("any_to_host_ce",
@@ -504,6 +504,78 @@ class OneToAllReadSM: public Testcase {
     void run(unsigned long long size, unsigned long long loopCount);
     bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
 };
+
+
+
+// host_to_device CE+CE: two concurrent CE streams on NVLink-C2C
+class HostToDeviceCECE: public Testcase {
+ public:
+    HostToDeviceCECE() : Testcase("host_to_device_ce_ce",
+            "\tTwo concurrent CE streams from host to device on NVLink-C2C.\n"
+            "\tMeasures bandwidth contention between two CE engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceCECE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
+// host_to_device CE+SM: one CE and one SM stream on NVLink-C2C
+class HostToDeviceCESM: public Testcase {
+ public:
+    HostToDeviceCESM() : Testcase("host_to_device_ce_sm",
+            "\tConcurrent CE and SM streams from host to device on NVLink-C2C.\n"
+            "\tMeasures bandwidth contention between CE and SM engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceCESM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
+// device_to_host CE+CE: two concurrent CE streams on NVLink-C2C
+class DeviceToHostCECE: public Testcase {
+ public:
+    DeviceToHostCECE() : Testcase("device_to_host_ce_ce",
+            "\tTwo concurrent CE streams from device to host on NVLink-C2C.\n"
+            "\tMeasures bandwidth contention between two CE engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostCECE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
+// device_to_host CE+SM: one CE and one SM stream on NVLink-C2C
+class DeviceToHostCESM: public Testcase {
+ public:
+    DeviceToHostCESM() : Testcase("device_to_host_ce_sm",
+            "\tConcurrent CE and SM streams from device to host on NVLink-C2C.\n"
+            "\tMeasures bandwidth contention between CE and SM engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostCESM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
+// device_to_device CE+CE: two concurrent CE streams on NVLink P2P
+class DeviceToDeviceWriteCECE: public Testcase {
+ public:
+    DeviceToDeviceWriteCECE() : Testcase("device_to_device_write_ce_ce",
+            "\tTwo concurrent CE streams between each pair of accessible GPU peers on NVLink.\n"
+            "\tMeasures bandwidth contention between two CE engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToDeviceWriteCECE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_device CE+SM: one CE and one SM stream on NVLink P2P
+class DeviceToDeviceWriteCESM: public Testcase {
+ public:
+    DeviceToDeviceWriteCESM() : Testcase("device_to_device_write_ce_sm",
+            "\tConcurrent CE and SM streams between each pair of accessible GPU peers on NVLink.\n"
+            "\tMeasures bandwidth contention between CE and SM engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToDeviceWriteCESM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+
 
 #ifdef MULTINODE
 // Device to Device CE Read memcpy using cuMemcpyAsync

@@ -212,7 +212,7 @@ class MemcpyOperation : public MemoryOperation {
             SUM_BW,            // Use the sum of all bandwidths from the simultaneous copy list
             TOTAL_BW,          // Use the total bandwidth of all copies, based on total time and total bytes copied
             VECTOR_BW,         // Return bandwidths of each copy separately
-            CONCURRENT_BW,     // Returns the total bandwidth of the co-running streams
+            // CONCURRENT_BW,     // Returns the total bandwidth of the co-running streams
     };
 
     ContextPreference ctxPreference;
@@ -232,21 +232,56 @@ class MemcpyOperation : public MemoryOperation {
     MemcpyOperation(unsigned long long loopCount, MemcpyInitiator *_memcpyInitiator, NodeHelper *_nodeHelper, ContextPreference ctxPreference = ContextPreference::PREFER_SRC_CONTEXT, BandwidthValue bandwidthValue = BandwidthValue::USE_FIRST_BW);
     virtual ~MemcpyOperation();
 
-    // Lists of paired nodes will be executed sumultaneously
+    // Lists of paired nodes will be executed simultaneously
     // context of srcBuffers is preferred (if not host) unless otherwise specified
     std::vector<double> doMemcpyCore(MemcpyDispatchInfo &info);
-
-    // Concurrent multi-stream testing with warmup/test/cooldown phases
-    // Ensures all streams compete for bandwidth during the entire test phase
-    std::vector<double> doConcurrentMemcpyCore(MemcpyDispatchInfo &info);
-
     std::vector<double> doMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers);
 
-    // Concurrent version wrapper for vector results
-    std::vector<double> doConcurrentMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers);
     double doMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers);
     double doMemcpy(const MemcpyBuffer &srcBuffer, const MemcpyBuffer &dstBuffer);
 };
+
+using BandwidthValue = MemcpyOperation::BandwidthValue;
+
+// Extends MemcpyOperation with per-stream initiator support and warmup/test/cooldown timing.
+class CustomMemcpyOperation : public MemoryOperation {
+ public:
+    // Enumerates supported per-stream initiator types
+    enum class InitiatorType {
+        CE,            // Copy Engine (cuMemcpyAsync)
+        SM,            // Streaming Multiprocessor (copy kernel)
+        INITIATOR_NUM,
+    };
+
+    ContextPreference ctxPreference;
+
+ private:
+    unsigned long long loopCount;
+    BandwidthValue bandwidthValue;
+    size_t *procMask;
+    std::shared_ptr<NodeHelper> nodeHelper;
+    std::shared_ptr<MemcpyInitiator> fallbackInitiator;  // CE initiator for memset/memcmp
+
+ protected:
+    // Per-stream initiators; empty = fall back to fallbackInitiator for all streams
+    std::vector<std::shared_ptr<MemcpyInitiator>> memcpyInitiators;
+
+ public:
+    // Constructor: takes ownership of each raw MemcpyInitiator* and stores in memcpyInitiators
+    CustomMemcpyOperation(unsigned long long loopCount, std::vector<MemcpyInitiator*> initiators, ContextPreference ctxPreference = ContextPreference::PREFER_SRC_CONTEXT, BandwidthValue bandwidthValue = BandwidthValue::VECTOR_BW);
+    CustomMemcpyOperation(unsigned long long loopCount, std::vector<MemcpyInitiator*> initiators, NodeHelper *_nodeHelper, ContextPreference ctxPreference = ContextPreference::PREFER_SRC_CONTEXT, BandwidthValue bandwidthValue = BandwidthValue::VECTOR_BW);
+    virtual ~CustomMemcpyOperation();
+
+    double doMemcpy(const MemcpyBuffer &srcBuffer, const MemcpyBuffer &dstBuffer, InitiatorType type);
+    double doMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types);
+
+    std::vector<double> doMemcpyCore(MemcpyDispatchInfo &info);
+    std::vector<double> doMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types);
+};
+
+
+using InitiatorType = CustomMemcpyOperation::InitiatorType;
+
 
 class MemPtrChaseOperation : public MemoryOperation {
  public:

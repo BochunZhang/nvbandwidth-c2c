@@ -307,7 +307,7 @@ void Testcase::allHostBidirHelper(unsigned long long size, MemcpyOperation &memc
     }
 }
 
-void Testcase::anyHostHelper(unsigned long long size, MemcpyOperation &memcpyInstance, std::vector<int> gpuIds, int streamCountPerGpu, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost) {
+void Testcase::anyHostHelper(unsigned long long size, CustomMemcpyOperation &memcpyInstance, std::vector<int> gpuIds, int streamCountPerGpu, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost) {
     // VERBOSE << "\n=== anyHostHelper Configuration ===" << std::endl;
     // VERBOSE << "Direction: " << (sourceIsHost ? "Host -> Device" : "Device -> Host") << std::endl;
     // VERBOSE << "GPUs: ";
@@ -340,9 +340,9 @@ void Testcase::anyHostHelper(unsigned long long size, MemcpyOperation &memcpyIns
     // Execute all streams concurrently with warmup/test/cooldown phases
     std::vector<double> result;
     if (sourceIsHost) {
-        result = memcpyInstance.doConcurrentMemcpyVector(hostBuffers, deviceBuffers);
+        result = memcpyInstance.doCustomMemcpyVector(hostBuffers, deviceBuffers);
     } else {
-        result = memcpyInstance.doConcurrentMemcpyVector(deviceBuffers, hostBuffers);
+        result = memcpyInstance.doCustomMemcpyVector(deviceBuffers, hostBuffers);
     }
 
     for (size_t i = 0; i < result.size(); i++) {

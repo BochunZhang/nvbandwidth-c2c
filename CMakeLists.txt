@@ -41,6 +41,7 @@ set(src
     testcase.cpp
     testcases_ce.cpp
     testcases_sm.cpp
+    testcases_custom.cpp
     kernels.cu
     memcpy.cpp
     nvbandwidth.cpp
