@@ -642,7 +642,7 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
         CU_ASSERT(cuEventCreate(&cooldownStartEvents[i], CU_EVENT_DEFAULT));
         CU_ASSERT(cuEventCreate(&cooldownEndEvents[i], CU_EVENT_DEFAULT));
         // Get the final copy size per stream; CE returns size unchanged, SM may truncate.
-        finalCopySize[i] = memcpyInitiators[types[i]]->getAdjustedCopySize(info.srcBuffers[i]->getBufferSize(), streams[i]);
+        finalCopySize[i] = memcpyInitiators[static_cast<size_t>(types[i])]->getAdjustedCopySize(info.srcBuffers[i]->getBufferSize(), streams[i]);
         info.adjustedCopySizes.push_back(finalCopySize[i]);
     }
     info.nodeHelper = nodeHelper;
@@ -671,7 +671,7 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
             CU_ASSERT(cuEventRecord(warmupStartEvents[i], info.streams[i]));
 
             MemcpyDescriptor warmupDesc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), WARMUP_COUNT);
-            memcpyInitiators[types[i]]->memcpyFunc(warmupDesc);
+            memcpyInitiators[static_cast<size_t>(types[i])]->memcpyFunc(warmupDesc);
         }
 
         // ========== Phase 2: Test ==========
@@ -683,7 +683,7 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
             CU_ASSERT(cuEventRecord(testStartEvents[i], info.streams[i]));
 
             MemcpyDescriptor testDesc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), loopCount);
-            adjustedCopySizes[i] = memcpyInitiators[types[i]]->memcpyFunc(testDesc);
+            adjustedCopySizes[i] = memcpyInitiators[static_cast<size_t>(types[i])]->memcpyFunc(testDesc);
         }
 
         // ========== Phase 3: Cooldown ==========
@@ -692,7 +692,7 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
 
             CU_ASSERT(cuEventRecord(cooldownStartEvents[i], info.streams[i]));
             MemcpyDescriptor cooldownDesc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), COOLDOWN_COUNT);
-            memcpyInitiators[types[i]]->memcpyFunc(cooldownDesc);
+            memcpyInitiators[static_cast<size_t>(types[i])]->memcpyFunc(cooldownDesc);
             CU_ASSERT(cuEventRecord(cooldownEndEvents[i], info.streams[i]));
         }
 
@@ -725,7 +725,7 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
             double elapsedTestInUs = ((double) testTime * 1000.0);
             unsigned long long bandwidth = (adjustedCopySizes[i] * loopCount * 1000ull * 1000ull) / (unsigned long long) elapsedTestInUs;
 
-            bandwidth = memcpyInitiators[types[i]]->getAdjustedBandwidth(bandwidth);
+            bandwidth = memcpyInitiators[static_cast<size_t>(types[i])]->getAdjustedBandwidth(bandwidth);
 
             bandwidthStats[i]((double) bandwidth);
 
