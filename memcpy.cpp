@@ -603,15 +603,14 @@ double CustomMemcpyOperation::doMemcpy(const MemcpyBuffer &srcBuffer, const Memc
 
 double CustomMemcpyOperation::doMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types) {
     MemcpyDispatchInfo dispatchInfo = nodeHelper->dispatchMemcpy(srcBuffers, dstBuffers, ctxPreference);
-    auto result = doMemcpyCore(dispatchInfo);
+    auto result = doMemcpyCore(dispatchInfo, types);
     return result[0];
 }
 
 
 std::vector<double> CustomMemcpyOperation::doMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types) {
     MemcpyDispatchInfo dispatchInfo = nodeHelper->dispatchMemcpy(srcBuffers, dstBuffers, ctxPreference);
-    double result = doMemcpyCore(dispatchInfo, types);
-    std::vector<double> results = {result};
+    std::vector<double> results = doMemcpyCore(dispatchInfo, types);
     return nodeHelper->calculateVectorBandwidth(results, dispatchInfo.originalRanks);
 }
 
