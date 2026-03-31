@@ -597,7 +597,7 @@ double CustomMemcpyOperation::doMemcpy(const MemcpyBuffer &srcBuffer, const Memc
     std::vector<const MemcpyBuffer*> srcBuffers = {&srcBuffer};
     std::vector<const MemcpyBuffer*> dstBuffers = {&dstBuffer};
     std::vector<InitiatorType> types = {type};
-    return doMemcpyCore(srcBuffers, dstBuffers, types)[0];
+    return doMemcpy(srcBuffers, dstBuffers, types);
 }
 
 
