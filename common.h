@@ -48,9 +48,11 @@ const unsigned int numThreadPerBlock = 512;
 const unsigned int strideLen = 16; /* cacheLine size 128 Bytes, 16 words */
 const unsigned long latencyMemAccessCnt = 1000000; /* 1M total read accesses to gauge latency */
 const unsigned int defaultStreamCount = 1;
+const unsigned int defaultCooldownCount = 8;
 
 extern int deviceCount;
 extern unsigned int streamCount;
+extern unsigned int cooldownCount;
 extern unsigned int averageLoopCount;
 extern bool disableAffinity;
 extern bool skipVerification;

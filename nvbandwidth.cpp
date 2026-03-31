@@ -36,6 +36,7 @@ namespace opt = boost::program_options;
 
 int deviceCount;
 unsigned int streamCount;
+unsigned int cooldownCount;
 unsigned int averageLoopCount;
 unsigned long long bufferSize;
 unsigned long long loopCount;
@@ -234,7 +235,8 @@ int main(int argc, char **argv) {
         ("useMean,m", opt::bool_switch(&useMean)->default_value(false), "Use mean instead of median for results")
         ("json,j", opt::bool_switch(&jsonOutput)->default_value(false), "Print output in json format instead of plain text.")
         ("gpus", opt::value<std::vector<int>>(&gpuIds)->multitoken()->default_value(std::vector<int>{0, 1}, "0 1"), "GPU IDs for HostToAny/AnyToHost test (space-separated, default: all GPUs)")
-        ("stream", opt::value<unsigned int>(&streamCount)->default_value(1), "Number of streams per GPU for HostToAny/AnyToHost test");
+        ("stream", opt::value<unsigned int>(&streamCount)->default_value(1), "Number of streams per GPU for HostToAny/AnyToHost test")
+        ("cooldown", opt::value<unsigned int>(&cooldownCount)->default_value(defaultCooldownCount), "Number of cooldown iterations after each test");
 
     opt::options_description all_opts("");
     all_opts.add(visible_opts);

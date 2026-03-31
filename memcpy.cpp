@@ -28,7 +28,6 @@
 #include "multinode_memcpy.h"
 #endif
 #define WARMUP_COUNT 4
-#define COOLDOWN_COUNT 4
 #include <cassert>
 
 MemcpyBuffer::MemcpyBuffer(size_t bufferSize): bufferSize(bufferSize), buffer(nullptr) {}
@@ -692,7 +691,7 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
             CU_ASSERT(cuCtxSetCurrent(info.contexts[i]));
 
             CU_ASSERT(cuEventRecord(cooldownStartEvents[i], info.streams[i]));
-            MemcpyDescriptor cooldownDesc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), COOLDOWN_COUNT);
+            MemcpyDescriptor cooldownDesc(info.dstBuffers[i]->getBuffer(), info.srcBuffers[i]->getBuffer(), info.streams[i], info.srcBuffers[i]->getBufferSize(), cooldownCount);
             memcpyInitiators[static_cast<size_t>(types[i])]->memcpyFunc(cooldownDesc);
             CU_ASSERT(cuEventRecord(cooldownEndEvents[i], info.streams[i]));
         }
