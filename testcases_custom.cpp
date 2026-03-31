@@ -95,7 +95,7 @@ void HostToDeviceCECE::run(unsigned long long size, unsigned long long loopCount
         std::vector<const MemcpyBuffer*> dstBufs = {&deviceBuffer1, &deviceBuffer2};
         std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 
-        auto results = memcpyInstance.doCustomMemcpy(srcBufs, dstBufs, types);
+        auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
         bw0   .value(0, deviceId) = results[0];
         bw1   .value(0, deviceId) = results[1];
         bwTotal.value(0, deviceId) = results[0] + results[1];
@@ -128,7 +128,7 @@ void HostToDeviceCESM::run(unsigned long long size, unsigned long long loopCount
         std::vector<const MemcpyBuffer*> dstBufs = {&deviceBuffer1, &deviceBuffer2};
         std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
 
-        auto results = memcpyInstance.doCustomMemcpy(srcBufs, dstBufs, types);
+        auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
         bw0   .value(0, deviceId) = results[0];
         bw1   .value(0, deviceId) = results[1];
         bwTotal.value(0, deviceId) = results[0] + results[1];
@@ -160,7 +160,7 @@ void DeviceToHostCECE::run(unsigned long long size, unsigned long long loopCount
         std::vector<const MemcpyBuffer*> dstBufs = {&hostBuffer1, &hostBuffer2};
         std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 
-        auto results = memcpyInstance.doCustomMemcpy(srcBufs, dstBufs, types);
+        auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
         bw0   .value(0, deviceId) = results[0];
         bw1   .value(0, deviceId) = results[1];
         bwTotal.value(0, deviceId) = results[0] + results[1];
@@ -193,7 +193,7 @@ void DeviceToHostCESM::run(unsigned long long size, unsigned long long loopCount
         std::vector<const MemcpyBuffer*> dstBufs = {&hostBuffer1, &hostBuffer2};
         std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
 
-        auto results = memcpyInstance.doCustomMemcpy(srcBufs, dstBufs, types);
+        auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
         bw0   .value(0, deviceId) = results[0];
         bw1   .value(0, deviceId) = results[1];
         bwTotal.value(0, deviceId) = results[0] + results[1];
@@ -227,7 +227,7 @@ void DeviceToDeviceReadCECE::run(unsigned long long size, unsigned long long loo
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 
-            auto results = memcpyInstance.doCustomMemcpy(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
             bw0   .value(srcId, dstId) = results[0];
             bw1   .value(srcId, dstId) = results[1];
             bwTotal.value(srcId, dstId) = results[0] + results[1];
@@ -262,7 +262,7 @@ void DeviceToDeviceWriteCECE::run(unsigned long long size, unsigned long long lo
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 
-            auto results = memcpyInstance.doCustomMemcpy(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
             bw0   .value(srcId, dstId) = results[0];
             bw1   .value(srcId, dstId) = results[1];
             bwTotal.value(srcId, dstId) = results[0] + results[1];
@@ -297,7 +297,7 @@ void DeviceToDeviceReadCESM::run(unsigned long long size, unsigned long long loo
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
 
-            auto results = memcpyInstance.doCustomMemcpy(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
             bw0   .value(srcId, dstId) = results[0];
             bw1   .value(srcId, dstId) = results[1];
             bwTotal.value(srcId, dstId) = results[0] + results[1];
@@ -333,7 +333,7 @@ void DeviceToDeviceWriteCESM::run(unsigned long long size, unsigned long long lo
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
 
-            auto results = memcpyInstance.doCustomMemcpy(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
             bw0   .value(srcId, dstId) = results[0];
             bw1   .value(srcId, dstId) = results[1];
             bwTotal.value(srcId, dstId) = results[0] + results[1];
