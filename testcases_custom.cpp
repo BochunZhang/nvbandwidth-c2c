@@ -33,44 +33,44 @@
 // Moved from testcases_ce.cpp
 // ---------------------------------------------------------------------------
 
-void HostToAnyCE::run(unsigned long long size, unsigned long long loopCount) {
-    VERBOSE << "\n=== HostToAnyCE Test Configuration ===" << std::endl;
-    VERBOSE << "GPU IDs: ";
-    for (int gpuId : gpuIds) { VERBOSE << gpuId << " "; }
-    VERBOSE << std::endl;
-    VERBOSE << "Streams per GPU: " << ::streamCount << std::endl;
-    VERBOSE << "Buffer size: " << (size / _MiB) << " MiB" << std::endl;
-    VERBOSE << "Loop count: " << loopCount << std::endl;
-    VERBOSE << "====================================\n" << std::endl;
+// void HostToAnyCE::run(unsigned long long size, unsigned long long loopCount) {
+//     VERBOSE << "\n=== HostToAnyCE Test Configuration ===" << std::endl;
+//     VERBOSE << "GPU IDs: ";
+//     for (int gpuId : gpuIds) { VERBOSE << gpuId << " "; }
+//     VERBOSE << std::endl;
+//     VERBOSE << "Streams per GPU: " << ::streamCount << std::endl;
+//     VERBOSE << "Buffer size: " << (size / _MiB) << " MiB" << std::endl;
+//     VERBOSE << "Loop count: " << loopCount << std::endl;
+//     VERBOSE << "====================================\n" << std::endl;
 
-    PeerValueMatrix<double> bandwidthValues(1, gpuIds.size(), key);
-    CustomMemcpyOperation memcpyInstance(loopCount, new MemcpyInitiatorCE(), PREFER_SRC_CONTEXT, MemcpyOperation::CONCURRENT_BW);
+//     PeerValueMatrix<double> bandwidthValues(1, gpuIds.size(), key);
+//     CustomMemcpyOperation memcpyInstance(loopCount, new MemcpyInitiatorCE(), PREFER_SRC_CONTEXT, MemcpyOperation::CONCURRENT_BW);
 
-    anyHostHelper(size, memcpyInstance, gpuIds, ::streamCount, bandwidthValues, true);
+//     anyHostHelper(size, memcpyInstance, gpuIds, ::streamCount, bandwidthValues, true);
 
-    output->addTestcaseResults(bandwidthValues,
-        "memcpy CE CPU(row) -> GPU(column) bandwidth (GB/s) with multi-stream");
-}
+//     output->addTestcaseResults(bandwidthValues,
+//         "memcpy CE CPU(row) -> GPU(column) bandwidth (GB/s) with multi-stream");
+// }
 
-void AnyToHostCE::run(unsigned long long size, unsigned long long loopCount) {
-    VERBOSE << "\n=== AnyToHostCE Test Configuration ===" << std::endl;
-    VERBOSE << "GPU IDs: ";
-    for (int gpuId : gpuIds) { VERBOSE << gpuId << " "; }
-    VERBOSE << std::endl;
-    VERBOSE << "Streams per GPU: " << ::streamCount << std::endl;
-    VERBOSE << "Buffer size: " << (size / _MiB) << " MiB" << std::endl;
-    VERBOSE << "Loop count: " << loopCount << std::endl;
-    VERBOSE << "====================================\n" << std::endl;
+// void AnyToHostCE::run(unsigned long long size, unsigned long long loopCount) {
+//     VERBOSE << "\n=== AnyToHostCE Test Configuration ===" << std::endl;
+//     VERBOSE << "GPU IDs: ";
+//     for (int gpuId : gpuIds) { VERBOSE << gpuId << " "; }
+//     VERBOSE << std::endl;
+//     VERBOSE << "Streams per GPU: " << ::streamCount << std::endl;
+//     VERBOSE << "Buffer size: " << (size / _MiB) << " MiB" << std::endl;
+//     VERBOSE << "Loop count: " << loopCount << std::endl;
+//     VERBOSE << "====================================\n" << std::endl;
 
-    PeerValueMatrix<double> bandwidthValues(1, gpuIds.size(), key);
-    CustomMemcpyOperation memcpyInstance(loopCount, new MemcpyInitiatorCE(), PREFER_SRC_CONTEXT, MemcpyOperation::CONCURRENT_BW);
+//     PeerValueMatrix<double> bandwidthValues(1, gpuIds.size(), key);
+//     CustomMemcpyOperation memcpyInstance(loopCount, new MemcpyInitiatorCE(), PREFER_SRC_CONTEXT, MemcpyOperation::CONCURRENT_BW);
 
-    // sourceIsHost=false: GPU -> Host
-    anyHostHelper(size, memcpyInstance, gpuIds, ::streamCount, bandwidthValues, false);
+//     // sourceIsHost=false: GPU -> Host
+//     anyHostHelper(size, memcpyInstance, gpuIds, ::streamCount, bandwidthValues, false);
 
-    output->addTestcaseResults(bandwidthValues,
-        "memcpy CE CPU(row) <- GPU(column) bandwidth (GB/s) with multi-stream");
-}
+//     output->addTestcaseResults(bandwidthValues,
+//         "memcpy CE CPU(row) <- GPU(column) bandwidth (GB/s) with multi-stream");
+// }
 
 
 
@@ -95,7 +95,7 @@ void HostToDeviceCECE::run(unsigned long long size, unsigned long long loopCount
         std::vector<const MemcpyBuffer*> dstBufs = {&deviceBuffer1, &deviceBuffer2};
         std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 
-        auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
+        auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
         bw0   .value(0, deviceId) = results[0];
         bw1   .value(0, deviceId) = results[1];
         bwTotal.value(0, deviceId) = results[0] + results[1];
@@ -128,7 +128,7 @@ void HostToDeviceCESM::run(unsigned long long size, unsigned long long loopCount
         std::vector<const MemcpyBuffer*> dstBufs = {&deviceBuffer1, &deviceBuffer2};
         std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
 
-        auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
+        auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
         bw0   .value(0, deviceId) = results[0];
         bw1   .value(0, deviceId) = results[1];
         bwTotal.value(0, deviceId) = results[0] + results[1];
@@ -160,7 +160,7 @@ void DeviceToHostCECE::run(unsigned long long size, unsigned long long loopCount
         std::vector<const MemcpyBuffer*> dstBufs = {&hostBuffer1, &hostBuffer2};
         std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 
-        auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
+        auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
         bw0   .value(0, deviceId) = results[0];
         bw1   .value(0, deviceId) = results[1];
         bwTotal.value(0, deviceId) = results[0] + results[1];
@@ -193,7 +193,7 @@ void DeviceToHostCESM::run(unsigned long long size, unsigned long long loopCount
         std::vector<const MemcpyBuffer*> dstBufs = {&hostBuffer1, &hostBuffer2};
         std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
 
-        auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
+        auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
         bw0   .value(0, deviceId) = results[0];
         bw1   .value(0, deviceId) = results[1];
         bwTotal.value(0, deviceId) = results[0] + results[1];
@@ -227,7 +227,7 @@ void DeviceToDeviceReadCECE::run(unsigned long long size, unsigned long long loo
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 
-            auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
             bw0   .value(srcId, dstId) = results[0];
             bw1   .value(srcId, dstId) = results[1];
             bwTotal.value(srcId, dstId) = results[0] + results[1];
@@ -262,7 +262,7 @@ void DeviceToDeviceWriteCECE::run(unsigned long long size, unsigned long long lo
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 
-            auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
             bw0   .value(srcId, dstId) = results[0];
             bw1   .value(srcId, dstId) = results[1];
             bwTotal.value(srcId, dstId) = results[0] + results[1];
@@ -297,7 +297,7 @@ void DeviceToDeviceReadCESM::run(unsigned long long size, unsigned long long loo
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
 
-            auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
             bw0   .value(srcId, dstId) = results[0];
             bw1   .value(srcId, dstId) = results[1];
             bwTotal.value(srcId, dstId) = results[0] + results[1];
@@ -333,7 +333,7 @@ void DeviceToDeviceWriteCESM::run(unsigned long long size, unsigned long long lo
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
 
-            auto results = memcpyInstance.doMemcpy(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
             bw0   .value(srcId, dstId) = results[0];
             bw1   .value(srcId, dstId) = results[1];
             bwTotal.value(srcId, dstId) = results[0] + results[1];
