@@ -626,7 +626,7 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
     std::vector<CUevent> cooldownStartEvents(info.srcBuffers.size());
     std::vector<CUevent> cooldownEndEvents(info.srcBuffers.size());
     std::vector<PerformanceStatistic> bandwidthStats(info.srcBuffers.size());
-    std::vector<PerformanceStatistic> aggregateStats(gpuIds.size());
+    // std::vector<PerformanceStatistic> aggregateStats(gpuIds.size());
     std::vector<size_t> adjustedCopySizes(info.srcBuffers.size());
     PerformanceStatistic totalBandwidth;
     CUevent totalEnd;
@@ -737,15 +737,14 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
                 << "cool: " << std::fixed << std::setprecision(3) << coolTime << " ms, "
                 << "total: " << std::fixed << std::setprecision(3) << totalTime << " ms\n";
 
-            // CONCURRENT_BW: accumulate per-GPU aggregate
-            if (bandwidthValue == BandwidthValue::CONCURRENT_BW) {
-                aggregate[i / streamCount] += bandwidth;
-                if (i % streamCount == streamCount - 1) {
-                    aggregateStats[i / streamCount]((double)(aggregate[i / streamCount] / streamCount));
-                    VERBOSE << "\t\tAggregate bandwidth: "
-                        << std::fixed << std::setprecision(2) << (double)aggregate[i / streamCount] * 1e-9 << " GB/s\n";
-                }
-            }
+            // if (bandwidthValue == BandwidthValue::CONCURRENT_BW) {
+            //     aggregate[i / streamCount] += bandwidth;
+            //     if (i % streamCount == streamCount - 1) {
+            //         aggregateStats[i / streamCount]((double)(aggregate[i / streamCount] / streamCount));
+            //         VERBOSE << "\t\tAggregate bandwidth: "
+            //             << std::fixed << std::setprecision(2) << (double)aggregate[i / streamCount] * 1e-9 << " GB/s\n";
+            //     }
+            // }
         }
     }
 
