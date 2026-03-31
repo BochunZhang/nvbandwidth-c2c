@@ -156,7 +156,7 @@ void DeviceToHostCECE::run(unsigned long long size, unsigned long long loopCount
         HostBuffer hostBuffer1(size, deviceId), hostBuffer2(size, deviceId);
         DeviceBuffer deviceBuffer1(size, deviceId), deviceBuffer2(size, deviceId);
 
-        std::vector<const MemcpyBuffer*> srcBufs = {&deviceBuffer1, &deviceBuffer2}
+        std::vector<const MemcpyBuffer*> srcBufs = {&deviceBuffer1, &deviceBuffer2};
         std::vector<const MemcpyBuffer*> dstBufs = {&hostBuffer1, &hostBuffer2};
         std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 

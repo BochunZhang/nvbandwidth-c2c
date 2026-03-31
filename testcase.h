@@ -551,6 +551,30 @@ class DeviceToHostCESM: public Testcase {
 };
 
 // device_to_device CE+CE: two concurrent CE streams on NVLink P2P
+class DeviceToDeviceReadCECE: public Testcase {
+ public:
+    DeviceToDeviceReadCECE() : Testcase("device_to_device_read_ce_ce",
+            "\tTwo concurrent CE streams between each pair of accessible GPU peers on NVLink.\n"
+            "\tMeasures bandwidth contention between two CE engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToDeviceReadCECE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_device CE+SM: one CE and one SM stream on NVLink P2P
+class DeviceToDeviceReadCESM: public Testcase {
+ public:
+    DeviceToDeviceReadCESM() : Testcase("device_to_device_read_ce_sm",
+            "\tConcurrent CE and SM streams between each pair of accessible GPU peers on NVLink.\n"
+            "\tMeasures bandwidth contention between CE and SM engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToDeviceReadCESM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_device CE+CE: two concurrent CE streams on NVLink P2P
 class DeviceToDeviceWriteCECE: public Testcase {
  public:
     DeviceToDeviceWriteCECE() : Testcase("device_to_device_write_ce_ce",
