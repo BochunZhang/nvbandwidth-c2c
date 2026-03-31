@@ -275,7 +275,7 @@ class CustomMemcpyOperation : public MemoryOperation {
     double doMemcpy(const MemcpyBuffer &srcBuffer, const MemcpyBuffer &dstBuffer, InitiatorType type);
     double doMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types);
 
-    std::vector<double> doMemcpyCore(MemcpyDispatchInfo &info);
+    std::vector<double> doMemcpyCore(MemcpyDispatchInfo &info, const std::vector<InitiatorType> &types);
     std::vector<double> doMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types);
 };
 
