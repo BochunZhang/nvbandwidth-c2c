@@ -39,8 +39,7 @@ class Testcase {
     void oneToAllHelper(unsigned long long size, MemcpyOperation &memcpyInstance, PeerValueMatrix<double> &bandwidthValues, bool isRead);
     void allHostHelper(unsigned long long size, MemcpyOperation &memcpyInstance, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost);
     void allHostBidirHelper(unsigned long long size, MemcpyOperation &memcpyInstance, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost);
-    void allHostAggregateHelper(unsigned long long size, MemcpyOperation &memcpyInstance, double &result, bool sourceIsHost);
-    void anyHostHelper(unsigned long long size, CustomMemcpyOperation &memcpyInstance, std::vector<int> gpuIds, int streamCountPerGpu, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost);
+//     void anyHostHelper(unsigned long long size, CustomMemcpyOperation &memcpyInstance, std::vector<int> gpuIds, int streamCountPerGpu, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost);
     void latencyHelper(const MemcpyBuffer &dataBuffer, bool measureDeviceToDeviceLatency);
 
  public:

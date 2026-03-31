@@ -241,25 +241,6 @@ void Testcase::allHostHelper(unsigned long long size, MemcpyOperation &memcpyIns
     }
 }
 
-void Testcase::allHostAggregateHelper(unsigned long long size, MemcpyOperation &memcpyInstance, double &result, bool sourceIsHost) {
-    std::vector<const MemcpyBuffer*> deviceBuffers;
-    std::vector<const MemcpyBuffer*> hostBuffers;
-
-    // Allocate one buffer per GPU - all run concurrently with no interference sizing
-    for (int deviceId = 0; deviceId < deviceCount; deviceId++) {
-        deviceBuffers.push_back(new DeviceBuffer(size, deviceId));
-        hostBuffers.push_back(new HostBuffer(size, deviceId));
-    }
-
-    if (sourceIsHost) {
-        result = memcpyInstance.doMemcpy(hostBuffers, deviceBuffers);
-    } else {
-        result = memcpyInstance.doMemcpy(deviceBuffers, hostBuffers);
-    }
-
-    for (auto node : deviceBuffers) { delete node; }
-    for (auto node : hostBuffers) { delete node; }
-}
 
 void Testcase::allHostBidirHelper(unsigned long long size, MemcpyOperation &memcpyInstance, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost) {
     for (int deviceId = 0; deviceId < deviceCount; deviceId++) {
@@ -307,54 +288,54 @@ void Testcase::allHostBidirHelper(unsigned long long size, MemcpyOperation &memc
     }
 }
 
-void Testcase::anyHostHelper(unsigned long long size, CustomMemcpyOperation &memcpyInstance, std::vector<int> gpuIds, int streamCountPerGpu, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost) {
-    // VERBOSE << "\n=== anyHostHelper Configuration ===" << std::endl;
-    // VERBOSE << "Direction: " << (sourceIsHost ? "Host -> Device" : "Device -> Host") << std::endl;
-    // VERBOSE << "GPUs: ";
-    // for (int gpuId : gpuIds) {
-    //     VERBOSE << gpuId << " ";
-    // }
-    // VERBOSE << std::endl;
-    // VERBOSE << "Streams per GPU: " << streamCountPerGpu << std::endl;
-    // VERBOSE << "Buffer size per stream: " << (size / _MiB) << " MiB" << std::endl;
-    // VERBOSE << "Total streams: " << (gpuIds.size() * streamCountPerGpu) << std::endl;
-    // VERBOSE << "====================================\n" << std::endl;
+// void Testcase::anyHostHelper(unsigned long long size, CustomMemcpyOperation &memcpyInstance, std::vector<int> gpuIds, int streamCountPerGpu, PeerValueMatrix<double> &bandwidthValues, bool sourceIsHost) {
+//     // VERBOSE << "\n=== anyHostHelper Configuration ===" << std::endl;
+//     // VERBOSE << "Direction: " << (sourceIsHost ? "Host -> Device" : "Device -> Host") << std::endl;
+//     // VERBOSE << "GPUs: ";
+//     // for (int gpuId : gpuIds) {
+//     //     VERBOSE << gpuId << " ";
+//     // }
+//     // VERBOSE << std::endl;
+//     // VERBOSE << "Streams per GPU: " << streamCountPerGpu << std::endl;
+//     // VERBOSE << "Buffer size per stream: " << (size / _MiB) << " MiB" << std::endl;
+//     // VERBOSE << "Total streams: " << (gpuIds.size() * streamCountPerGpu) << std::endl;
+//     // VERBOSE << "====================================\n" << std::endl;
 
-    std::vector<const MemcpyBuffer*> deviceBuffers;
-    std::vector<const MemcpyBuffer*> hostBuffers;
+//     std::vector<const MemcpyBuffer*> deviceBuffers;
+//     std::vector<const MemcpyBuffer*> hostBuffers;
 
-    // Create buffers for all streams
-    int streamIdx = 0;
-    for (int gpuId : gpuIds) {
-        for (int s = 0; s < streamCountPerGpu; s++) {
-            VERBOSE << "  Stream " << streamIdx++ << ": GPU " << gpuId
-                    << " <-> Host (NUMA affinity for GPU " << gpuId << "), "
-                    << (size / _MiB) << " MiB" << std::endl;
-            deviceBuffers.push_back(new DeviceBuffer(size, gpuId));
-            hostBuffers.push_back(new HostBuffer(size, gpuId));
-        }
-    }
+//     // Create buffers for all streams
+//     int streamIdx = 0;
+//     for (int gpuId : gpuIds) {
+//         for (int s = 0; s < streamCountPerGpu; s++) {
+//             VERBOSE << "  Stream " << streamIdx++ << ": GPU " << gpuId
+//                     << " <-> Host (NUMA affinity for GPU " << gpuId << "), "
+//                     << (size / _MiB) << " MiB" << std::endl;
+//             deviceBuffers.push_back(new DeviceBuffer(size, gpuId));
+//             hostBuffers.push_back(new HostBuffer(size, gpuId));
+//         }
+//     }
 
-    VERBOSE << "Executing memory copy on all " << deviceBuffers.size() << " streams..." << std::endl;
+//     VERBOSE << "Executing memory copy on all " << deviceBuffers.size() << " streams..." << std::endl;
 
-    // Execute all streams concurrently with warmup/test/cooldown phases
-    std::vector<double> result;
-    if (sourceIsHost) {
-        result = memcpyInstance.doCustomMemcpyVector(hostBuffers, deviceBuffers);
-    } else {
-        result = memcpyInstance.doCustomMemcpyVector(deviceBuffers, hostBuffers);
-    }
+//     // Execute all streams concurrently with warmup/test/cooldown phases
+//     std::vector<double> result;
+//     if (sourceIsHost) {
+//         result = memcpyInstance.doCustomMemcpyVector(hostBuffers, deviceBuffers);
+//     } else {
+//         result = memcpyInstance.doCustomMemcpyVector(deviceBuffers, hostBuffers);
+//     }
 
-    for (size_t i = 0; i < result.size(); i++) {
-        bandwidthValues.value(0, gpuIds[i]) = result[i];
-    }
+//     for (size_t i = 0; i < result.size(); i++) {
+//         bandwidthValues.value(0, gpuIds[i]) = result[i];
+//     }
 
-    // Cleanup
-    for (auto node : deviceBuffers) {
-        delete node;
-    }
-    for (auto node : hostBuffers) {
-        delete node;
-    }
-}
+//     // Cleanup
+//     for (auto node : deviceBuffers) {
+//         delete node;
+//     }
+//     for (auto node : hostBuffers) {
+//         delete node;
+//     }
+// }
 
