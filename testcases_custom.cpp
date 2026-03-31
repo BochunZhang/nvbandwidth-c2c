@@ -220,9 +220,17 @@ void DeviceToDeviceReadCECE::run(unsigned long long size, unsigned long long loo
 
     for (int srcId = 0; srcId < deviceCount; srcId++) {
         for (int dstId = 0; dstId < deviceCount; dstId++) {
+            if (srcId == dstId) {
+                continue;
+            }
+
             DeviceBuffer srcBuffer1(size, srcId), srcBuffer2(size, srcId);
             DeviceBuffer dstBuffer1(size, dstId), dstBuffer2(size, dstId);
-
+            
+            if (!srcBuffer1.enablePeerAcess(dstBuffer1) || !srcBuffer2.enablePeerAcess(dstBuffer2)) {
+                continue;
+            }
+            
             std::vector<const MemcpyBuffer*> srcBufs = {&srcBuffer1, &srcBuffer2};
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
@@ -255,8 +263,16 @@ void DeviceToDeviceWriteCECE::run(unsigned long long size, unsigned long long lo
 
     for (int srcId = 0; srcId < deviceCount; srcId++) {
         for (int dstId = 0; dstId < deviceCount; dstId++) {
+            if (srcId == dstId) {
+                continue;
+            }
+        
             DeviceBuffer srcBuffer1(size, srcId), srcBuffer2(size, srcId);
             DeviceBuffer dstBuffer1(size, dstId), dstBuffer2(size, dstId);
+
+            if (!srcBuffer1.enablePeerAcess(dstBuffer1) || !srcBuffer2.enablePeerAcess(dstBuffer2)) {
+                continue;
+            }
 
             std::vector<const MemcpyBuffer*> srcBufs = {&srcBuffer1, &srcBuffer2};
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
@@ -290,9 +306,17 @@ void DeviceToDeviceReadCESM::run(unsigned long long size, unsigned long long loo
 
     for (int srcId = 0; srcId < deviceCount; srcId++) {
         for (int dstId = 0; dstId < deviceCount; dstId++) {
+            if (srcId == dstId) {
+                continue;
+            }
+
             DeviceBuffer srcBuffer1(size, srcId), srcBuffer2(size, srcId);
             DeviceBuffer dstBuffer1(size, dstId), dstBuffer2(size, dstId);
-
+            
+            if (!srcBuffer1.enablePeerAcess(dstBuffer1) || !srcBuffer2.enablePeerAcess(dstBuffer2)) {
+                continue;
+            }
+            
             std::vector<const MemcpyBuffer*> srcBufs = {&srcBuffer1, &srcBuffer2};
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
@@ -326,8 +350,16 @@ void DeviceToDeviceWriteCESM::run(unsigned long long size, unsigned long long lo
 
     for (int srcId = 0; srcId < deviceCount; srcId++) {
         for (int dstId = 0; dstId < deviceCount; dstId++) {
+            if (srcId == dstId) {
+                continue;
+            }
+
             DeviceBuffer srcBuffer1(size, srcId), srcBuffer2(size, srcId);
             DeviceBuffer dstBuffer1(size, dstId), dstBuffer2(size, dstId);
+
+            if (!srcBuffer1.enablePeerAcess(dstBuffer1) || !srcBuffer2.enablePeerAcess(dstBuffer2)) {
+                continue;
+            }
 
             std::vector<const MemcpyBuffer*> srcBufs = {&srcBuffer1, &srcBuffer2};
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
