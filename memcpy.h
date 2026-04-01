@@ -95,6 +95,12 @@ class MemcpyDispatchInfo {
 class NodeHelper {
  public:
     virtual MemcpyDispatchInfo dispatchMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, ContextPreference ctxPreference) = 0;
+    // Per-stream context preference override: ctxPreferences[i] selects the context for stream i.
+    // Default implementation falls back to the scalar overload using ctxPreferences[0].
+    virtual MemcpyDispatchInfo dispatchMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<ContextPreference> &ctxPreferences) {
+        ContextPreference pref = ctxPreferences.empty() ? PREFER_SRC_CONTEXT : ctxPreferences[0];
+        return dispatchMemcpy(srcBuffers, dstBuffers, pref);
+    }
     virtual double calculateTotalBandwidth(double totalTime, double totalSize, size_t loopCount) = 0;
     virtual double calculateSumBandwidth(std::vector<PerformanceStatistic> &bandwidthStats) = 0;
     virtual double calculateFirstBandwidth(std::vector<PerformanceStatistic> &bandwidthStats) = 0;
@@ -117,6 +123,7 @@ class NodeHelperSingle : public NodeHelper {
     NodeHelperSingle();
     ~NodeHelperSingle();
     MemcpyDispatchInfo dispatchMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, ContextPreference ctxPreference);
+    MemcpyDispatchInfo dispatchMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<ContextPreference> &ctxPreferences);
     double calculateTotalBandwidth(double totalTime, double totalSize, size_t loopCount);
     double calculateSumBandwidth(std::vector<PerformanceStatistic> &bandwidthStats);
     double calculateFirstBandwidth(std::vector<PerformanceStatistic> &bandwidthStats);
@@ -277,6 +284,8 @@ class CustomMemcpyOperation : public MemoryOperation {
 
     std::vector<double> doMemcpyCore(MemcpyDispatchInfo &info, const std::vector<InitiatorType> &types);
     std::vector<double> doMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types);
+    // Per-stream context preference variant: each stream uses ctxPreferences[i] independently.
+    std::vector<double> doMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types, const std::vector<ContextPreference> &ctxPreferences);
 };
 
 

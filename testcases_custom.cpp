@@ -678,7 +678,10 @@ void DeviceToHostCEDeviceToDeviceReadCE::run(unsigned long long size, unsigned l
     std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
     initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
 
-    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_DST_CONTEXT, MemcpyOperation::VECTOR_BW);
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    // D->H uses src context (device is source); DtoD read uses dst context (local dst pulls from peer).
+    const std::vector<ContextPreference> ctxPrefs = {PREFER_SRC_CONTEXT, PREFER_DST_CONTEXT};
 
     for (int primId = 0; primId < deviceCount; primId++) {
         for (int peerId = 0; peerId < deviceCount; peerId++) {
@@ -691,13 +694,13 @@ void DeviceToHostCEDeviceToDeviceReadCE::run(unsigned long long size, unsigned l
 
             if (!primBuf2.enablePeerAcess(peerBuf)) continue;
 
-            // Stream 0 (CE): primBuf1 -> hostBuf   [D->H, PREFER_DST_CONTEXT: host no ctx -> primId]
+            // Stream 0 (CE): primBuf1 -> hostBuf   [D->H, PREFER_SRC_CONTEXT: primId]
             // Stream 1 (CE): peerBuf  -> primBuf2  [DtoD read, PREFER_DST_CONTEXT: primId]
             std::vector<const MemcpyBuffer*> srcBufs = {&primBuf1, &peerBuf};
             std::vector<const MemcpyBuffer*> dstBufs = {&hostBuf,  &primBuf2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
 
-            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types, ctxPrefs);
             bwDtoH .value(primId, peerId) = results[0];
             bwDtoD .value(primId, peerId) = results[1];
             bwTotal.value(primId, peerId) = results[0] + results[1];
@@ -721,7 +724,9 @@ void DeviceToHostCEDeviceToDeviceReadSM::run(unsigned long long size, unsigned l
     initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
     initiators[static_cast<size_t>(InitiatorType::SM)] = new MemcpyInitiatorSM();
 
-    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_DST_CONTEXT, MemcpyOperation::VECTOR_BW);
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    const std::vector<ContextPreference> ctxPrefs = {PREFER_SRC_CONTEXT, PREFER_DST_CONTEXT};
 
     for (int primId = 0; primId < deviceCount; primId++) {
         for (int peerId = 0; peerId < deviceCount; peerId++) {
@@ -738,7 +743,7 @@ void DeviceToHostCEDeviceToDeviceReadSM::run(unsigned long long size, unsigned l
             std::vector<const MemcpyBuffer*> dstBufs = {&hostBuf,  &primBuf2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::SM};
 
-            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types, ctxPrefs);
             bwDtoH .value(primId, peerId) = results[0];
             bwDtoD .value(primId, peerId) = results[1];
             bwTotal.value(primId, peerId) = results[0] + results[1];
@@ -762,7 +767,9 @@ void DeviceToHostSMDeviceToDeviceReadCE::run(unsigned long long size, unsigned l
     initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
     initiators[static_cast<size_t>(InitiatorType::SM)] = new MemcpyInitiatorSM();
 
-    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_DST_CONTEXT, MemcpyOperation::VECTOR_BW);
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    const std::vector<ContextPreference> ctxPrefs = {PREFER_SRC_CONTEXT, PREFER_DST_CONTEXT};
 
     for (int primId = 0; primId < deviceCount; primId++) {
         for (int peerId = 0; peerId < deviceCount; peerId++) {
@@ -779,7 +786,7 @@ void DeviceToHostSMDeviceToDeviceReadCE::run(unsigned long long size, unsigned l
             std::vector<const MemcpyBuffer*> dstBufs = {&hostBuf,  &primBuf2};
             std::vector<InitiatorType> types = {InitiatorType::SM, InitiatorType::CE};
 
-            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types, ctxPrefs);
             bwDtoH .value(primId, peerId) = results[0];
             bwDtoD .value(primId, peerId) = results[1];
             bwTotal.value(primId, peerId) = results[0] + results[1];
@@ -802,7 +809,9 @@ void DeviceToHostSMDeviceToDeviceReadSM::run(unsigned long long size, unsigned l
     std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
     initiators[static_cast<size_t>(InitiatorType::SM)] = new MemcpyInitiatorSM();
 
-    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_DST_CONTEXT, MemcpyOperation::VECTOR_BW);
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    const std::vector<ContextPreference> ctxPrefs = {PREFER_SRC_CONTEXT, PREFER_DST_CONTEXT};
 
     for (int primId = 0; primId < deviceCount; primId++) {
         for (int peerId = 0; peerId < deviceCount; peerId++) {
@@ -819,7 +828,7 @@ void DeviceToHostSMDeviceToDeviceReadSM::run(unsigned long long size, unsigned l
             std::vector<const MemcpyBuffer*> dstBufs = {&hostBuf,  &primBuf2};
             std::vector<InitiatorType> types = {InitiatorType::SM, InitiatorType::SM};
 
-            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types, ctxPrefs);
             bwDtoH .value(primId, peerId) = results[0];
             bwDtoD .value(primId, peerId) = results[1];
             bwTotal.value(primId, peerId) = results[0] + results[1];

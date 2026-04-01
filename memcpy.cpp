@@ -332,6 +332,24 @@ MemcpyDispatchInfo NodeHelperSingle::dispatchMemcpy(const std::vector<const Memc
     return MemcpyDispatchInfo(srcBuffers, dstBuffers, contexts);
 }
 
+MemcpyDispatchInfo NodeHelperSingle::dispatchMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<ContextPreference> &ctxPreferences) {
+    CU_ASSERT(srcBuffers.size() == dstBuffers.size());
+    CU_ASSERT(ctxPreferences.size() == srcBuffers.size());
+
+    std::vector<CUcontext> contexts(srcBuffers.size());
+
+    for (int i = 0; i < srcBuffers.size(); i++) {
+        // prefer source context
+        if (ctxPreferences[i] == PREFER_SRC_CONTEXT && srcBuffers[i]->getPrimaryCtx() != nullptr) {
+            contexts[i] = srcBuffers[i]->getPrimaryCtx();
+        } else if (dstBuffers[i]->getPrimaryCtx() != nullptr) {
+            contexts[i] = dstBuffers[i]->getPrimaryCtx();
+        }
+    }
+
+    return MemcpyDispatchInfo(srcBuffers, dstBuffers, contexts);
+}
+
 double NodeHelperSingle::calculateTotalBandwidth(double totalTime, double totalSize, size_t loopCount) {
     return (totalSize * loopCount * 1000ull * 1000ull) / totalTime;
 }
@@ -610,6 +628,12 @@ double CustomMemcpyOperation::doMemcpy(const std::vector<const MemcpyBuffer*> &s
 
 std::vector<double> CustomMemcpyOperation::doMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types) {
     MemcpyDispatchInfo dispatchInfo = nodeHelper->dispatchMemcpy(srcBuffers, dstBuffers, ctxPreference);
+    std::vector<double> results = doMemcpyCore(dispatchInfo, types);
+    return nodeHelper->calculateVectorBandwidth(results, dispatchInfo.originalRanks);
+}
+
+std::vector<double> CustomMemcpyOperation::doMemcpyVector(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<InitiatorType> &types, const std::vector<ContextPreference> &ctxPreferences) {
+    MemcpyDispatchInfo dispatchInfo = nodeHelper->dispatchMemcpy(srcBuffers, dstBuffers, ctxPreferences);
     std::vector<double> results = doMemcpyCore(dispatchInfo, types);
     return nodeHelper->calculateVectorBandwidth(results, dispatchInfo.originalRanks);
 }
