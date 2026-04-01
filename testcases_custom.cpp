@@ -1339,7 +1339,6 @@ void ConcurrentCE::run(unsigned long long size, unsigned long long loopCount) {
     PeerValueMatrix<double> bwS5(1, 1, key + "_write_gpu1_to_gpu3");
     PeerValueMatrix<double> bwS6(1, 1, key + "_read_gpu2_to_gpu1");
     PeerValueMatrix<double> bwS7(1, 1, key + "_read_gpu3_to_gpu1");
-    PeerValueMatrix<double> bwTotal(1, 1, key + "_total");
 
     std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
     initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
@@ -1394,8 +1393,6 @@ void ConcurrentCE::run(unsigned long long size, unsigned long long loopCount) {
         return;
     }
 
-    
-
     // Per-stream context preferences
     const std::vector<ContextPreference> ctxPrefs = {
         PREFER_DST_CONTEXT,   // s0: H->GPU0, host has no ctx -> GPU0
@@ -1423,7 +1420,8 @@ void ConcurrentCE::run(unsigned long long size, unsigned long long loopCount) {
     bwS3   .value(0, 0) = results[3];
     bwS4   .value(0, 0) = results[4];
     bwS5   .value(0, 0) = results[5];
-    bwTotal.value(0, 0) = results[0] + results[1] + results[2] + results[3] + results[4] + results[5];
+    bwS6   .value(0, 0) = results[6];
+    bwS7   .value(0, 0) = results[7];
 
     output->addTestcaseResults(bwS0,    "CE stream0 (H->D):          CPU -> GPU0 bandwidth (GB/s)");
     output->addTestcaseResults(bwS1,    "CE stream1 (D->H):          GPU0 -> CPU bandwidth (GB/s)");
@@ -1431,5 +1429,6 @@ void ConcurrentCE::run(unsigned long long size, unsigned long long loopCount) {
     output->addTestcaseResults(bwS3,    "CE stream3 (DtoD write):    GPU0 -> GPU1 bandwidth (GB/s)");
     output->addTestcaseResults(bwS4,    "CE stream4 (DtoD write):    GPU1 -> GPU2 bandwidth (GB/s)");
     output->addTestcaseResults(bwS5,    "CE stream5 (DtoD write):    GPU1 -> GPU3 bandwidth (GB/s)");
-    output->addTestcaseResults(bwTotal, "total bandwidth (GB/s)");
+    output->addTestcaseResults(bwS6,    "CE stream6 (DtoD read):     GPU2 -> GPU1 bandwidth (GB/s)");
+    output->addTestcaseResults(bwS7,    "CE stream7 (DtoD read):     GPU3 -> GPU1 bandwidth (GB/s)");
 }
