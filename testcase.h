@@ -882,6 +882,19 @@ class HostToDeviceSMDeviceToDeviceWriteSM: public Testcase {
     bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
 };
 
+// GPU0: H→D + D→H + DtoD read/write GPU1 (CE); GPU1: DtoD write to GPU2 and GPU3 (CE)
+class ConcurrentCE: public Testcase {
+ public:
+    ConcurrentCE() : Testcase("concurrent_ce",
+            "\tGPU0 concurrently: H->D CE, D->H CE, DtoD read from GPU1 CE, DtoD write to GPU1 CE.\n"
+            "\tGPU1 concurrently: DtoD write to GPU2 CE, DtoD write to GPU3 CE.\n"
+            "\tRequires at least 4 GPUs with peer access: GPU0<->GPU1, GPU1<->GPU2, GPU1<->GPU3.\n"
+            "\tReports per-stream bandwidth and total.") {}
+    virtual ~ConcurrentCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return deviceCount >= 4; }
+};
+
 
 #ifdef MULTINODE
 // Device to Device CE Read memcpy using cuMemcpyAsync

@@ -1321,3 +1321,115 @@ void HostToDeviceSMDeviceToDeviceWriteSM::run(unsigned long long size, unsigned 
     output->addTestcaseResults(bwTotal, "total bandwidth (GB/s)");
 }
 
+// ---------------------------------------------------------------------------
+// four_gpu_concurrent_ce
+// Stream 0 (CE): host  -> GPU0   [H->D,        PREFER_DST_CONTEXT: GPU0]
+// Stream 1 (CE): GPU0  -> host   [D->H,        PREFER_SRC_CONTEXT: GPU0]
+// Stream 2 (CE): GPU1  -> GPU0   [DtoD read,   PREFER_DST_CONTEXT: GPU0]
+// Stream 3 (CE): GPU0  -> GPU1   [DtoD write,  PREFER_SRC_CONTEXT: GPU0]
+// Stream 4 (CE): GPU1  -> GPU2   [DtoD write,  PREFER_SRC_CONTEXT: GPU1]
+// Stream 5 (CE): GPU1  -> GPU3   [DtoD write,  PREFER_SRC_CONTEXT: GPU1]
+// ---------------------------------------------------------------------------
+void ConcurrentCE::run(unsigned long long size, unsigned long long loopCount) {
+    PeerValueMatrix<double> bwS0(1, 1, key + "_h2d_gpu0");
+    PeerValueMatrix<double> bwS1(1, 1, key + "_d2h_gpu0");
+    PeerValueMatrix<double> bwS2(1, 1, key + "_read_gpu1_to_gpu0");
+    PeerValueMatrix<double> bwS3(1, 1, key + "_write_gpu0_to_gpu1");
+    PeerValueMatrix<double> bwS4(1, 1, key + "_write_gpu1_to_gpu2");
+    PeerValueMatrix<double> bwS5(1, 1, key + "_write_gpu1_to_gpu3");
+    PeerValueMatrix<double> bwS6(1, 1, key + "_read_gpu2_to_gpu1");
+    PeerValueMatrix<double> bwS7(1, 1, key + "_read_gpu3_to_gpu1");
+    PeerValueMatrix<double> bwTotal(1, 1, key + "_total");
+
+    std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
+    initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
+
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    // GPU0 stream buffers
+    HostBuffer   s0hostBuf(size, 0);   // s0 src: H->GPU0
+    DeviceBuffer s0gpu0Buf(size, 0);   // s0 dst *
+    DeviceBuffer s1gpu0Buf(size, 0);   // s1 src: GPU0->H *
+    HostBuffer   s1hostBuf(size, 0);   // s1 dst
+    DeviceBuffer s2gpu1Buf(size, 1);   // s2 src: GPU1->GPU0 read
+    DeviceBuffer s2gpu0Buf(size, 0);   // s2 dst *
+    DeviceBuffer s3gpu0Buf(size, 0);   // s3 src: GPU0->GPU1 write *
+    DeviceBuffer s3gpu1Buf(size, 1);   // s3 dst
+    // GPU1 stream buffers
+    DeviceBuffer s4gpu1Buf(size, 1);   // s4 src: GPU1->GPU2 write *
+    DeviceBuffer s4gpu2Buf(size, 2);   // s4 dst
+    DeviceBuffer s5gpu1Buf(size, 1);   // s5 src: GPU1->GPU3 write *
+    DeviceBuffer s5gpu3Buf(size, 3);   // s5 dst
+    DeviceBuffer s6gpu2Buf(size, 2);   // s6 src: GPU2->GPU1 read
+    DeviceBuffer s6gpu1Buf(size, 1);   // s6 dst * 
+    DeviceBuffer s7gpu3Buf(size, 3);   // s7 src: GPU3->GPU1 read
+    DeviceBuffer s7gpu1Buf(size, 1);   // s7 dst *
+
+    // Enable peer access for each required device pair
+    if (!s2gpu1Buf.enablePeerAcess(s2gpu0Buf)) {
+        output->recordWarning("concurrent_ce: GPU0<->GPU1 peer access not available, skipping.");
+        return;
+    }
+    if (!s3gpu0Buf.enablePeerAcess(s3gpu1Buf)) {
+        output->recordWarning("concurrent_ce: GPU0<->GPU1 peer access not available, skipping.");
+        return;
+    }
+    if (!s4gpu1Buf.enablePeerAcess(s4gpu2Buf)) {
+        output->recordWarning("concurrent_ce: GPU1<->GPU2 peer access not available, skipping.");
+        return;
+    }
+
+    if (!s5gpu1Buf.enablePeerAcess(s5gpu3Buf)) {
+        output->recordWarning("concurrent_ce: GPU1<->GPU3 peer access not available, skipping.");
+        return;
+    }
+
+    if (!s6gpu1Buf.enablePeerAcess(s6gpu2Buf)) {
+        output->recordWarning("concurrent_ce: GPU1<->GPU2 peer access not available, skipping.");
+        return;
+    }
+
+    if (!s7gpu1Buf.enablePeerAcess(s7gpu3Buf)) {
+        output->recordWarning("concurrent_ce: GPU1<->GPU3 peer access not available, skipping.");
+        return;
+    }
+
+    
+
+    // Per-stream context preferences
+    const std::vector<ContextPreference> ctxPrefs = {
+        PREFER_DST_CONTEXT,   // s0: H->GPU0, host has no ctx -> GPU0
+        PREFER_SRC_CONTEXT,   // s1: GPU0->H, src=GPU0 -> GPU0
+        PREFER_DST_CONTEXT,   // s2: GPU1->GPU0 read, dst=GPU0 -> GPU0
+        PREFER_SRC_CONTEXT,   // s3: GPU0->GPU1 write, src=GPU0 -> GPU0
+        PREFER_SRC_CONTEXT,   // s4: GPU1->GPU2 write, src=GPU1 -> GPU1
+        PREFER_SRC_CONTEXT,   // s5: GPU1->GPU3 write, src=GPU1 -> GPU1
+        PREFER_DST_CONTEXT,   // s6: GPU2->GPU1 read, src=GPU1 -> GPU1
+        PREFER_DST_CONTEXT,   // s7: GPU3->GPU1 read, src=GPU1 -> GPU1
+    };
+
+    std::vector<const MemcpyBuffer*> srcBufs = {&s0hostBuf, &s1gpu0Buf, &s2gpu1Buf, &s3gpu0Buf, &s4gpu1Buf, &s5gpu1Buf, &s6gpu2Buf, &s7gpu3Buf};
+    std::vector<const MemcpyBuffer*> dstBufs = {&s0gpu0Buf, &s1hostBuf, &s2gpu0Buf, &s3gpu1Buf, &s4gpu2Buf, &s5gpu3Buf, &s6gpu1Buf};
+    std::vector<InitiatorType> types = {
+        InitiatorType::CE, InitiatorType::CE, InitiatorType::CE, InitiatorType::CE,
+        InitiatorType::CE, InitiatorType::CE, InitiatorType::CE, InitiatorType::CE,
+    };
+
+    auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types, ctxPrefs);
+
+    bwS0   .value(0, 0) = results[0];
+    bwS1   .value(0, 0) = results[1];
+    bwS2   .value(0, 0) = results[2];
+    bwS3   .value(0, 0) = results[3];
+    bwS4   .value(0, 0) = results[4];
+    bwS5   .value(0, 0) = results[5];
+    bwTotal.value(0, 0) = results[0] + results[1] + results[2] + results[3] + results[4] + results[5];
+
+    output->addTestcaseResults(bwS0,    "CE stream0 (H->D):          CPU -> GPU0 bandwidth (GB/s)");
+    output->addTestcaseResults(bwS1,    "CE stream1 (D->H):          GPU0 -> CPU bandwidth (GB/s)");
+    output->addTestcaseResults(bwS2,    "CE stream2 (DtoD read):     GPU1 -> GPU0 bandwidth (GB/s)");
+    output->addTestcaseResults(bwS3,    "CE stream3 (DtoD write):    GPU0 -> GPU1 bandwidth (GB/s)");
+    output->addTestcaseResults(bwS4,    "CE stream4 (DtoD write):    GPU1 -> GPU2 bandwidth (GB/s)");
+    output->addTestcaseResults(bwS5,    "CE stream5 (DtoD write):    GPU1 -> GPU3 bandwidth (GB/s)");
+    output->addTestcaseResults(bwTotal, "total bandwidth (GB/s)");
+}

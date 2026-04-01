@@ -30,7 +30,7 @@ TESTS=(
     host_to_device_ce_device_to_device_write_sm
     host_to_device_sm_device_to_device_write_ce
     host_to_device_sm_device_to_device_write_sm
-    
+
     device_to_host_ce_device_to_device_read_ce
     device_to_host_ce_device_to_device_read_sm
     device_to_host_sm_device_to_device_read_ce
@@ -39,6 +39,8 @@ TESTS=(
     device_to_host_ce_device_to_device_write_sm
     device_to_host_sm_device_to_device_write_ce
     device_to_host_sm_device_to_device_write_sm
+
+    concurrent_ce
 )
 
 for name in "${TESTS[@]}"; do
