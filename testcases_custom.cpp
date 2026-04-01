@@ -1432,3 +1432,63 @@ void ConcurrentCE::run(unsigned long long size, unsigned long long loopCount) {
     output->addTestcaseResults(bwS6,    "CE stream6 (DtoD read):     GPU2 -> GPU1 bandwidth (GB/s)");
     output->addTestcaseResults(bwS7,    "CE stream7 (DtoD read):     GPU3 -> GPU1 bandwidth (GB/s)");
 }
+
+// ---------------------------------------------------------------------------
+// host_to_device_bidirectional_memcpy helper macro (avoid code duplication)
+// Stream 0: H->D using initiator type h2d_type (PREFER_DST_CONTEXT -> device)
+// Stream 1: D->H using initiator type d2h_type (PREFER_SRC_CONTEXT -> device)
+// Iterates over all devices; both streams share the same device context.
+// ---------------------------------------------------------------------------
+static void runHostDeviceBidir(unsigned long long size, unsigned long long loopCount,
+                                InitiatorType h2dType, InitiatorType d2hType,
+                                const std::string &key) {
+    PeerValueMatrix<double> bwH2D(1, deviceCount, key + "_h2d");
+    PeerValueMatrix<double> bwD2H(1, deviceCount, key + "_d2h");
+    PeerValueMatrix<double> bwTotal(1, deviceCount, key + "_total");
+
+    std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
+    initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
+    initiators[static_cast<size_t>(InitiatorType::SM)] = new MemcpyInitiatorSM();
+
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    // Per-stream context preferences: H->D uses dst (device), D->H uses src (device)
+    const std::vector<ContextPreference> ctxPrefs = {PREFER_DST_CONTEXT, PREFER_SRC_CONTEXT};
+
+    for (int devId = 0; devId < deviceCount; devId++) {
+        HostBuffer   hostH2D(size, devId);   // s0 src
+        DeviceBuffer devH2D (size, devId);   // s0 dst
+        DeviceBuffer devD2H (size, devId);   // s1 src
+        HostBuffer   hostD2H(size, devId);   // s1 dst
+
+        std::vector<const MemcpyBuffer*> srcBufs = {&hostH2D, &devD2H};
+        std::vector<const MemcpyBuffer*> dstBufs = {&devH2D,  &hostD2H};
+        std::vector<InitiatorType> types = {h2dType, d2hType};
+
+        auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types, ctxPrefs);
+
+        bwH2D .value(0, devId) = results[0];
+        bwD2H .value(0, devId) = results[1];
+        bwTotal.value(0, devId) = results[0] + results[1];
+    }
+
+    output->addTestcaseResults(bwH2D,   "H->D stream: CPU -> GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bwD2H,   "D->H stream: GPU -> CPU bandwidth (GB/s)");
+    output->addTestcaseResults(bwTotal, "total bandwidth (GB/s)");
+}
+
+void HostDeviceBidirCECE::run(unsigned long long size, unsigned long long loopCount) {
+    runHostDeviceBidir(size, loopCount, InitiatorType::CE, InitiatorType::CE, key);
+}
+
+void HostDeviceBidirCESM::run(unsigned long long size, unsigned long long loopCount) {
+    runHostDeviceBidir(size, loopCount, InitiatorType::CE, InitiatorType::SM, key);
+}
+
+void HostDeviceBidirSMCE::run(unsigned long long size, unsigned long long loopCount) {
+    runHostDeviceBidir(size, loopCount, InitiatorType::SM, InitiatorType::CE, key);
+}
+
+void HostDeviceBidirSMSM::run(unsigned long long size, unsigned long long loopCount) {
+    runHostDeviceBidir(size, loopCount, InitiatorType::SM, InitiatorType::SM, key);
+}

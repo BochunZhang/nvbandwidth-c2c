@@ -107,6 +107,11 @@ std::vector<Testcase*> createTestcases() {
         new DeviceToDeviceLatencySM(),
         new DeviceLocalCopy(),
 
+        new HostDeviceBidirCECE(),
+        new HostDeviceBidirCESM(),
+        new HostDeviceBidirSMCE(),
+        new HostDeviceBidirSMSM(),
+
         new HostToDeviceCECE(),
         new HostToDeviceCESM(),
         new HostToDeviceSMCE(),

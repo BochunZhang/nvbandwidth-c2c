@@ -4,6 +4,11 @@ set -euo pipefail
 mkdir -p results
 
 TESTS=(
+    host_to_device_bidirectional_memcpy_ce_ce
+    host_to_device_bidirectional_memcpy_ce_sm
+    host_to_device_bidirectional_memcpy_sm_ce
+    host_to_device_bidirectional_memcpy_sm_sm
+
     host_to_device_ce_ce
     host_to_device_ce_sm
     host_to_device_sm_ce

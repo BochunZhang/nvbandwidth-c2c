@@ -506,6 +506,42 @@ class OneToAllReadSM: public Testcase {
 
 
 
+// host_to_device_bidirectional CE+CE: H->D CE and D->H CE simultaneously, reports both directions
+class HostDeviceBidirCECE: public Testcase {
+ public:
+    HostDeviceBidirCECE() : Testcase("host_to_device_bidirectional_memcpy_ce_ce",
+            "\tConcurrent H->D (CE) and D->H (CE) per device. Reports both directions' bandwidth.") {}
+    virtual ~HostDeviceBidirCECE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
+// host_to_device_bidirectional CE+SM: H->D CE and D->H SM simultaneously, reports both directions
+class HostDeviceBidirCESM: public Testcase {
+ public:
+    HostDeviceBidirCESM() : Testcase("host_to_device_bidirectional_memcpy_ce_sm",
+            "\tConcurrent H->D (CE) and D->H (SM) per device. Reports both directions' bandwidth.") {}
+    virtual ~HostDeviceBidirCESM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
+// host_to_device_bidirectional SM+CE: H->D SM and D->H CE simultaneously, reports both directions
+class HostDeviceBidirSMCE: public Testcase {
+ public:
+    HostDeviceBidirSMCE() : Testcase("host_to_device_bidirectional_memcpy_sm_ce",
+            "\tConcurrent H->D (SM) and D->H (CE) per device. Reports both directions' bandwidth.") {}
+    virtual ~HostDeviceBidirSMCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
+// host_to_device_bidirectional SM+SM: H->D SM and D->H SM simultaneously, reports both directions
+class HostDeviceBidirSMSM: public Testcase {
+ public:
+    HostDeviceBidirSMSM() : Testcase("host_to_device_bidirectional_memcpy_sm_sm",
+            "\tConcurrent H->D (SM) and D->H (SM) per device. Reports both directions' bandwidth.") {}
+    virtual ~HostDeviceBidirSMSM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
 // host_to_device CE+CE: two concurrent CE streams on NVLink-C2C
 class HostToDeviceCECE: public Testcase {
  public:
