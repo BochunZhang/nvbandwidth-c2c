@@ -109,12 +109,16 @@ std::vector<Testcase*> createTestcases() {
 
         new HostToDeviceCECE(),
         new HostToDeviceCESM(),
+        new HostToDeviceSMCE(),
         new DeviceToHostCECE(),
         new DeviceToHostCESM(),
+        new DeviceToHostSMCE(),
         new DeviceToDeviceReadCECE(),
         new DeviceToDeviceReadCESM(),
+        new DeviceToDeviceReadSMCE(),
         new DeviceToDeviceWriteCECE(),
         new DeviceToDeviceWriteCESM(),
+        new DeviceToDeviceWriteSMCE(),
 
 #ifdef MULTINODE
         new MultinodeDeviceToDeviceReadCE(),

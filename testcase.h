@@ -528,6 +528,17 @@ class HostToDeviceCESM: public Testcase {
     void run(unsigned long long size, unsigned long long loopCount);
 };
 
+// host_to_device SM+CE: one SM and one CE stream on NVLink-C2C
+class HostToDeviceSMCE: public Testcase {
+ public:
+    HostToDeviceSMCE() : Testcase("host_to_device_sm_ce",
+            "\tConcurrent SM and CE streams from host to device on NVLink-C2C.\n"
+            "\tMeasures bandwidth contention between SM and CE engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceSMCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
 // device_to_host CE+CE: two concurrent CE streams on NVLink-C2C
 class DeviceToHostCECE: public Testcase {
  public:
@@ -547,6 +558,17 @@ class DeviceToHostCESM: public Testcase {
             "\tMeasures bandwidth contention between CE and SM engines.\n"
             "\tReports per-stream and total bandwidth.") {}
     virtual ~DeviceToHostCESM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+};
+
+// device_to_host SM+CE: one SM and one CE stream on NVLink-C2C
+class DeviceToHostSMCE: public Testcase {
+ public:
+    DeviceToHostSMCE() : Testcase("device_to_host_sm_ce",
+            "\tConcurrent SM and CE streams from device to host on NVLink-C2C.\n"
+            "\tMeasures bandwidth contention between SM and CE engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostSMCE() {}
     void run(unsigned long long size, unsigned long long loopCount);
 };
 
@@ -570,6 +592,18 @@ class DeviceToDeviceReadCESM: public Testcase {
             "\tMeasures bandwidth contention between CE and SM engines.\n"
             "\tReports per-stream and total bandwidth.") {}
     virtual ~DeviceToDeviceReadCESM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_device CE+SM: one CE and one SM stream on NVLink P2P
+class DeviceToDeviceReadSMCE: public Testcase {
+ public:
+    DeviceToDeviceReadSMCE() : Testcase("device_to_device_read_sm_ce",
+            "\tConcurrent SM and CE streams between each pair of accessible GPU peers on NVLink.\n"
+            "\tMeasures bandwidth contention between SM and CE engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToDeviceReadSMCE() {}
     void run(unsigned long long size, unsigned long long loopCount);
     bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
 };
@@ -598,6 +632,17 @@ class DeviceToDeviceWriteCESM: public Testcase {
     bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
 };
 
+// device_to_device SM+CE: one SM and one CE stream on NVLink P2P
+class DeviceToDeviceWriteSMCE: public Testcase {
+ public:
+    DeviceToDeviceWriteSMCE() : Testcase("device_to_device_write_sm_ce",
+            "\tConcurrent SM and CE streams between each pair of accessible GPU peers on NVLink.\n"
+            "\tMeasures bandwidth contention between SM and CE engines.\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToDeviceWriteSMCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
 
 
 #ifdef MULTINODE
