@@ -333,9 +333,6 @@ MemcpyDispatchInfo NodeHelperSingle::dispatchMemcpy(const std::vector<const Memc
 }
 
 MemcpyDispatchInfo NodeHelperSingle::dispatchMemcpy(const std::vector<const MemcpyBuffer*> &srcBuffers, const std::vector<const MemcpyBuffer*> &dstBuffers, const std::vector<ContextPreference> &ctxPreferences) {
-    CU_ASSERT(srcBuffers.size() == dstBuffers.size());
-    CU_ASSERT(ctxPreferences.size() == srcBuffers.size());
-
     std::vector<CUcontext> contexts(srcBuffers.size());
 
     for (int i = 0; i < srcBuffers.size(); i++) {
