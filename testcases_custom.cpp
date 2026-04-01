@@ -173,6 +173,38 @@ void HostToDeviceSMCE::run(unsigned long long size, unsigned long long loopCount
 }
 
 // ---------------------------------------------------------------------------
+// host_to_device_sm_sm: two SM streams, host->device (NVLink-C2C)
+// ---------------------------------------------------------------------------
+void HostToDeviceSMSM::run(unsigned long long size, unsigned long long loopCount) {
+    PeerValueMatrix<double> bw0  (1, deviceCount, key + "_sm1");
+    PeerValueMatrix<double> bw1  (1, deviceCount, key + "_sm2");
+    PeerValueMatrix<double> bwTotal(1, deviceCount, key + "_total");
+
+    std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
+    initiators[static_cast<size_t>(InitiatorType::SM)] = new MemcpyInitiatorSM();
+
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    for (int deviceId = 0; deviceId < deviceCount; deviceId++) {
+        HostBuffer hostBuffer1(size, deviceId), hostBuffer2(size, deviceId);
+        DeviceBuffer deviceBuffer1(size, deviceId), deviceBuffer2(size, deviceId);
+
+        std::vector<const MemcpyBuffer*> srcBufs = {&hostBuffer1, &hostBuffer2};
+        std::vector<const MemcpyBuffer*> dstBufs = {&deviceBuffer1, &deviceBuffer2};
+        std::vector<InitiatorType> types = {InitiatorType::SM, InitiatorType::SM};
+
+        auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
+        bw0   .value(0, deviceId) = results[0];
+        bw1   .value(0, deviceId) = results[1];
+        bwTotal.value(0, deviceId) = results[0] + results[1];
+    }
+
+    output->addTestcaseResults(bw0,    "SM stream0: CPU -> GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bw1,    "SM stream1: CPU -> GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bwTotal,"total:      CPU -> GPU bandwidth (GB/s)");
+}
+
+// ---------------------------------------------------------------------------
 // device_to_host_ce_ce: two CE streams, device->host (NVLink-C2C)
 // ---------------------------------------------------------------------------
 void DeviceToHostCECE::run(unsigned long long size, unsigned long long loopCount) {
@@ -271,6 +303,38 @@ void DeviceToHostSMCE::run(unsigned long long size, unsigned long long loopCount
 }
 
 // ---------------------------------------------------------------------------
+// device_to_host_sm_sm: two SM streams, device->host (NVLink-C2C)
+// ---------------------------------------------------------------------------
+void DeviceToHostSMSM::run(unsigned long long size, unsigned long long loopCount) {
+    PeerValueMatrix<double> bw0  (1, deviceCount, key + "_sm1");
+    PeerValueMatrix<double> bw1  (1, deviceCount, key + "_sm2");
+    PeerValueMatrix<double> bwTotal(1, deviceCount, key + "_total");
+
+    std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
+    initiators[static_cast<size_t>(InitiatorType::SM)] = new MemcpyInitiatorSM();
+
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    for (int deviceId = 0; deviceId < deviceCount; deviceId++) {
+        HostBuffer hostBuffer1(size, deviceId), hostBuffer2(size, deviceId);
+        DeviceBuffer deviceBuffer1(size, deviceId), deviceBuffer2(size, deviceId);
+
+        std::vector<const MemcpyBuffer*> srcBufs = {&deviceBuffer1, &deviceBuffer2};
+        std::vector<const MemcpyBuffer*> dstBufs = {&hostBuffer1, &hostBuffer2};
+        std::vector<InitiatorType> types = {InitiatorType::SM, InitiatorType::SM};
+
+        auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
+        bw0   .value(0, deviceId) = results[0];
+        bw1   .value(0, deviceId) = results[1];
+        bwTotal.value(0, deviceId) = results[0] + results[1];
+    }
+
+    output->addTestcaseResults(bw0,    "SM stream0: CPU <- GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bw1,    "SM stream1: CPU <- GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bwTotal,"total:      CPU <- GPU bandwidth (GB/s)");
+}
+
+// ---------------------------------------------------------------------------
 // device_to_device_read_ce_ce: two CE streams per peer pair (NVLink P2P)
 // ---------------------------------------------------------------------------
 void DeviceToDeviceReadCECE::run(unsigned long long size, unsigned long long loopCount) {
@@ -296,49 +360,6 @@ void DeviceToDeviceReadCECE::run(unsigned long long size, unsigned long long loo
                 continue;
             }
             
-            std::vector<const MemcpyBuffer*> srcBufs = {&srcBuffer1, &srcBuffer2};
-            std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
-            std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
-
-            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
-            bw0   .value(srcId, dstId) = results[0];
-            bw1   .value(srcId, dstId) = results[1];
-            bwTotal.value(srcId, dstId) = results[0] + results[1];
-        }
-    }
-
-    output->addTestcaseResults(bw0,    "CE stream0: GPU -> GPU bandwidth (GB/s)");
-    output->addTestcaseResults(bw1,    "CE stream1: GPU -> GPU bandwidth (GB/s)");
-    output->addTestcaseResults(bwTotal,"total:   GPU -> GPU bandwidth (GB/s)");
-}
-
-
-// ---------------------------------------------------------------------------
-// device_to_device_write_ce_ce: two CE streams per peer pair (NVLink P2P)
-// ---------------------------------------------------------------------------
-void DeviceToDeviceWriteCECE::run(unsigned long long size, unsigned long long loopCount) {
-    PeerValueMatrix<double> bw0  (deviceCount, deviceCount, key + "_ce1");
-    PeerValueMatrix<double> bw1  (deviceCount, deviceCount, key + "_ce2");
-    PeerValueMatrix<double> bwTotal(deviceCount, deviceCount, key + "_total");
-
-    std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
-    initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
-
-    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
-
-    for (int srcId = 0; srcId < deviceCount; srcId++) {
-        for (int dstId = 0; dstId < deviceCount; dstId++) {
-            if (srcId == dstId) {
-                continue;
-            }
-        
-            DeviceBuffer srcBuffer1(size, srcId), srcBuffer2(size, srcId);
-            DeviceBuffer dstBuffer1(size, dstId), dstBuffer2(size, dstId);
-
-            if (!srcBuffer1.enablePeerAcess(dstBuffer1) || !srcBuffer2.enablePeerAcess(dstBuffer2)) {
-                continue;
-            }
-
             std::vector<const MemcpyBuffer*> srcBufs = {&srcBuffer1, &srcBuffer2};
             std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
             std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
@@ -441,6 +462,85 @@ void DeviceToDeviceReadSMCE::run(unsigned long long size, unsigned long long loo
     output->addTestcaseResults(bwTotal,"total:   GPU -> GPU bandwidth (GB/s)");
 }
 
+// ---------------------------------------------------------------------------
+// device_to_device_read_sm_sm: two SM streams per peer pair (NVLink P2P, read)
+// ---------------------------------------------------------------------------
+void DeviceToDeviceReadSMSM::run(unsigned long long size, unsigned long long loopCount) {
+    PeerValueMatrix<double> bw0  (deviceCount, deviceCount, key + "_sm1");
+    PeerValueMatrix<double> bw1  (deviceCount, deviceCount, key + "_sm2");
+    PeerValueMatrix<double> bwTotal(deviceCount, deviceCount, key + "_total");
+
+    std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
+    initiators[static_cast<size_t>(InitiatorType::SM)] = new MemcpyInitiatorSM();
+
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_DST_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    for (int srcId = 0; srcId < deviceCount; srcId++) {
+        for (int dstId = 0; dstId < deviceCount; dstId++) {
+            if (srcId == dstId) continue;
+
+            DeviceBuffer srcBuffer1(size, srcId), srcBuffer2(size, srcId);
+            DeviceBuffer dstBuffer1(size, dstId), dstBuffer2(size, dstId);
+
+            if (!srcBuffer1.enablePeerAcess(dstBuffer1) || !srcBuffer2.enablePeerAcess(dstBuffer2)) continue;
+
+            std::vector<const MemcpyBuffer*> srcBufs = {&srcBuffer1, &srcBuffer2};
+            std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
+            std::vector<InitiatorType> types = {InitiatorType::SM, InitiatorType::SM};
+
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
+            bw0   .value(srcId, dstId) = results[0];
+            bw1   .value(srcId, dstId) = results[1];
+            bwTotal.value(srcId, dstId) = results[0] + results[1];
+        }
+    }
+
+    output->addTestcaseResults(bw0,    "SM stream0: GPU -> GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bw1,    "SM stream1: GPU -> GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bwTotal,"total:      GPU -> GPU bandwidth (GB/s)");
+}
+
+// ---------------------------------------------------------------------------
+// device_to_device_write_ce_ce: two CE streams per peer pair (NVLink P2P)
+// ---------------------------------------------------------------------------
+void DeviceToDeviceWriteCECE::run(unsigned long long size, unsigned long long loopCount) {
+    PeerValueMatrix<double> bw0  (deviceCount, deviceCount, key + "_ce1");
+    PeerValueMatrix<double> bw1  (deviceCount, deviceCount, key + "_ce2");
+    PeerValueMatrix<double> bwTotal(deviceCount, deviceCount, key + "_total");
+
+    std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
+    initiators[static_cast<size_t>(InitiatorType::CE)] = new MemcpyInitiatorCE();
+
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    for (int srcId = 0; srcId < deviceCount; srcId++) {
+        for (int dstId = 0; dstId < deviceCount; dstId++) {
+            if (srcId == dstId) {
+                continue;
+            }
+        
+            DeviceBuffer srcBuffer1(size, srcId), srcBuffer2(size, srcId);
+            DeviceBuffer dstBuffer1(size, dstId), dstBuffer2(size, dstId);
+
+            if (!srcBuffer1.enablePeerAcess(dstBuffer1) || !srcBuffer2.enablePeerAcess(dstBuffer2)) {
+                continue;
+            }
+
+            std::vector<const MemcpyBuffer*> srcBufs = {&srcBuffer1, &srcBuffer2};
+            std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
+            std::vector<InitiatorType> types = {InitiatorType::CE, InitiatorType::CE};
+
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
+            bw0   .value(srcId, dstId) = results[0];
+            bw1   .value(srcId, dstId) = results[1];
+            bwTotal.value(srcId, dstId) = results[0] + results[1];
+        }
+    }
+
+    output->addTestcaseResults(bw0,    "CE stream0: GPU -> GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bw1,    "CE stream1: GPU -> GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bwTotal,"total:   GPU -> GPU bandwidth (GB/s)");
+}
 
 // ---------------------------------------------------------------------------
 // device_to_device_write_ce_sm: CE + SM streams per peer pair (NVLink P2P)
@@ -526,4 +626,42 @@ void DeviceToDeviceWriteSMCE::run(unsigned long long size, unsigned long long lo
     output->addTestcaseResults(bw0,    "SM stream: GPU -> GPU bandwidth (GB/s)");
     output->addTestcaseResults(bw1,    "CE stream: GPU -> GPU bandwidth (GB/s)");
     output->addTestcaseResults(bwTotal,"total:   GPU -> GPU bandwidth (GB/s)");
+}
+
+// ---------------------------------------------------------------------------
+// device_to_device_write_sm_sm: two SM streams per peer pair (NVLink P2P, write)
+// ---------------------------------------------------------------------------
+void DeviceToDeviceWriteSMSM::run(unsigned long long size, unsigned long long loopCount) {
+    PeerValueMatrix<double> bw0  (deviceCount, deviceCount, key + "_sm1");
+    PeerValueMatrix<double> bw1  (deviceCount, deviceCount, key + "_sm2");
+    PeerValueMatrix<double> bwTotal(deviceCount, deviceCount, key + "_total");
+
+    std::vector<MemcpyInitiator*> initiators(static_cast<size_t>(InitiatorType::INITIATOR_NUM), nullptr);
+    initiators[static_cast<size_t>(InitiatorType::SM)] = new MemcpyInitiatorSM();
+
+    CustomMemcpyOperation memcpyInstance(loopCount, initiators, PREFER_SRC_CONTEXT, MemcpyOperation::VECTOR_BW);
+
+    for (int srcId = 0; srcId < deviceCount; srcId++) {
+        for (int dstId = 0; dstId < deviceCount; dstId++) {
+            if (srcId == dstId) continue;
+
+            DeviceBuffer srcBuffer1(size, srcId), srcBuffer2(size, srcId);
+            DeviceBuffer dstBuffer1(size, dstId), dstBuffer2(size, dstId);
+
+            if (!srcBuffer1.enablePeerAcess(dstBuffer1) || !srcBuffer2.enablePeerAcess(dstBuffer2)) continue;
+
+            std::vector<const MemcpyBuffer*> srcBufs = {&srcBuffer1, &srcBuffer2};
+            std::vector<const MemcpyBuffer*> dstBufs = {&dstBuffer1, &dstBuffer2};
+            std::vector<InitiatorType> types = {InitiatorType::SM, InitiatorType::SM};
+
+            auto results = memcpyInstance.doMemcpyVector(srcBufs, dstBufs, types);
+            bw0   .value(srcId, dstId) = results[0];
+            bw1   .value(srcId, dstId) = results[1];
+            bwTotal.value(srcId, dstId) = results[0] + results[1];
+        }
+    }
+
+    output->addTestcaseResults(bw0,    "SM stream0: GPU -> GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bw1,    "SM stream1: GPU -> GPU bandwidth (GB/s)");
+    output->addTestcaseResults(bwTotal,"total:      GPU -> GPU bandwidth (GB/s)");
 }
