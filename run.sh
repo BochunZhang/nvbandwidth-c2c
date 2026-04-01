@@ -1,35 +1,54 @@
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_ce_ce --force-overwrite true ./nvbandwidth -t host_to_device_ce_ce --cooldown 24 -v > results/host_to_device_ce_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_ce_sm --force-overwrite true ./nvbandwidth -t host_to_device_ce_sm --cooldown 24 -v > results/host_to_device_ce_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_sm_ce --force-overwrite true ./nvbandwidth -t host_to_device_sm_ce --cooldown 24 -v > results/host_to_device_sm_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_sm_sm --force-overwrite true ./nvbandwidth -t host_to_device_sm_sm --cooldown 24 -v > results/host_to_device_sm_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_ce_ce --force-overwrite true ./nvbandwidth -t device_to_host_ce_ce --cooldown 24 -v > results/device_to_host_ce_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_ce_sm --force-overwrite true ./nvbandwidth -t device_to_host_ce_sm --cooldown 24 -v > results/device_to_host_ce_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_sm_ce --force-overwrite true ./nvbandwidth -t device_to_host_sm_ce --cooldown 24 -v > results/device_to_host_sm_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_sm_sm --force-overwrite true ./nvbandwidth -t device_to_host_sm_sm --cooldown 24 -v > results/device_to_host_sm_sm.txt
+#!/usr/bin/env bash
+set -euo pipefail
 
-nsys profile --trace=cuda,nvtx --output=results/device_to_device_read_ce_ce  --force-overwrite true ./nvbandwidth -t device_to_device_read_ce_ce  --cooldown 24 -v > results/device_to_device_read_ce_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_device_read_ce_sm  --force-overwrite true ./nvbandwidth -t device_to_device_read_ce_sm  --cooldown 24 -v > results/device_to_device_read_ce_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_device_read_sm_ce  --force-overwrite true ./nvbandwidth -t device_to_device_read_sm_ce  --cooldown 24 -v > results/device_to_device_read_sm_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_device_read_sm_sm  --force-overwrite true ./nvbandwidth -t device_to_device_read_sm_sm  --cooldown 24 -v > results/device_to_device_read_sm_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_device_write_ce_ce --force-overwrite true ./nvbandwidth -t device_to_device_write_ce_ce --cooldown 24 -v > results/device_to_device_write_ce_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_device_write_ce_sm --force-overwrite true ./nvbandwidth -t device_to_device_write_ce_sm --cooldown 24 -v > results/device_to_device_write_ce_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_device_write_sm_ce --force-overwrite true ./nvbandwidth -t device_to_device_write_sm_ce --cooldown 24 -v > results/device_to_device_write_sm_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_device_write_sm_sm --force-overwrite true ./nvbandwidth -t device_to_device_write_sm_sm --cooldown 24 -v > results/device_to_device_write_sm_sm.txt
+mkdir -p results
 
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_ce_device_to_device_read_ce  --force-overwrite true ./nvbandwidth -t device_to_host_ce_device_to_device_read_ce  --cooldown 24 -v > results/device_to_host_ce_device_to_device_read_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_ce_device_to_device_read_sm  --force-overwrite true ./nvbandwidth -t device_to_host_ce_device_to_device_read_sm  --cooldown 24 -v > results/device_to_host_ce_device_to_device_read_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_sm_device_to_device_read_ce  --force-overwrite true ./nvbandwidth -t device_to_host_sm_device_to_device_read_ce  --cooldown 24 -v > results/device_to_host_sm_device_to_device_read_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_sm_device_to_device_read_sm  --force-overwrite true ./nvbandwidth -t device_to_host_sm_device_to_device_read_sm  --cooldown 24 -v > results/device_to_host_sm_device_to_device_read_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_ce_device_to_device_write_ce --force-overwrite true ./nvbandwidth -t device_to_host_ce_device_to_device_write_ce --cooldown 24 -v > results/device_to_host_ce_device_to_device_write_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_ce_device_to_device_write_sm --force-overwrite true ./nvbandwidth -t device_to_host_ce_device_to_device_write_sm --cooldown 24 -v > results/device_to_host_ce_device_to_device_write_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_sm_device_to_device_write_ce --force-overwrite true ./nvbandwidth -t device_to_host_sm_device_to_device_write_ce --cooldown 24 -v > results/device_to_host_sm_device_to_device_write_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/device_to_host_sm_device_to_device_write_sm --force-overwrite true ./nvbandwidth -t device_to_host_sm_device_to_device_write_sm --cooldown 24 -v > results/device_to_host_sm_device_to_device_write_sm.txt
+TESTS=(
+    host_to_device_ce_ce
+    host_to_device_ce_sm
+    host_to_device_sm_ce
+    host_to_device_sm_sm
+    device_to_host_ce_ce
+    device_to_host_ce_sm
+    device_to_host_sm_ce
+    device_to_host_sm_sm
 
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_ce_device_to_device_read_ce  --force-overwrite true ./nvbandwidth -t host_to_device_ce_device_to_device_read_ce  --cooldown 24 -v > results/host_to_device_ce_device_to_device_read_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_ce_device_to_device_read_sm  --force-overwrite true ./nvbandwidth -t host_to_device_ce_device_to_device_read_sm  --cooldown 24 -v > results/host_to_device_ce_device_to_device_read_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_sm_device_to_device_read_ce  --force-overwrite true ./nvbandwidth -t host_to_device_sm_device_to_device_read_ce  --cooldown 24 -v > results/host_to_device_sm_device_to_device_read_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_sm_device_to_device_read_sm  --force-overwrite true ./nvbandwidth -t host_to_device_sm_device_to_device_read_sm  --cooldown 24 -v > results/host_to_device_sm_device_to_device_read_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_ce_device_to_device_write_ce --force-overwrite true ./nvbandwidth -t host_to_device_ce_device_to_device_write_ce --cooldown 24 -v > results/host_to_device_ce_device_to_device_write_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_ce_device_to_device_write_sm --force-overwrite true ./nvbandwidth -t host_to_device_ce_device_to_device_write_sm --cooldown 24 -v > results/host_to_device_ce_device_to_device_write_sm.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_sm_device_to_device_write_ce --force-overwrite true ./nvbandwidth -t host_to_device_sm_device_to_device_write_ce --cooldown 24 -v > results/host_to_device_sm_device_to_device_write_ce.txt
-nsys profile --trace=cuda,nvtx --output=results/host_to_device_sm_device_to_device_write_sm --force-overwrite true ./nvbandwidth -t host_to_device_sm_device_to_device_write_sm --cooldown 24 -v > results/host_to_device_sm_device_to_device_write_sm.txt
+    device_to_device_read_ce_ce
+    device_to_device_read_ce_sm
+    device_to_device_read_sm_ce
+    device_to_device_read_sm_sm
+    device_to_device_write_ce_ce
+    device_to_device_write_ce_sm
+    device_to_device_write_sm_ce
+    device_to_device_write_sm_sm
+
+    device_to_host_ce_device_to_device_read_ce
+    device_to_host_ce_device_to_device_read_sm
+    device_to_host_sm_device_to_device_read_ce
+    device_to_host_sm_device_to_device_read_sm
+    device_to_host_ce_device_to_device_write_ce
+    device_to_host_ce_device_to_device_write_sm
+    device_to_host_sm_device_to_device_write_ce
+    device_to_host_sm_device_to_device_write_sm
+
+    host_to_device_ce_device_to_device_read_ce
+    host_to_device_ce_device_to_device_read_sm
+    host_to_device_sm_device_to_device_read_ce
+    host_to_device_sm_device_to_device_read_sm
+    host_to_device_ce_device_to_device_write_ce
+    host_to_device_ce_device_to_device_write_sm
+    host_to_device_sm_device_to_device_write_ce
+    host_to_device_sm_device_to_device_write_sm
+)
+
+for name in "${TESTS[@]}"; do
+    echo ">>> Running: $name"
+    nsys profile --trace=cuda,nvtx \
+        --output="results/${name}" \
+        --force-overwrite true \
+        ./nvbandwidth -t "$name" --cooldown 24 -v \
+        > "results/${name}.txt"
+    echo "    Done: $name"
+done
+
+echo "=== All tests complete ==="
