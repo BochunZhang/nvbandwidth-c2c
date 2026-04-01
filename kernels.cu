@@ -214,7 +214,7 @@ size_t copyKernel(MemcpyDescriptor &desc) {
 
     size_t chunkSizeInElement = sizeInElement / totalThreadCount;
 
-    VERBOSE << "copyKernel: stridingMemcpyKernel use " << numSM << " SMs, each has" << numThreadPerBlock << " threads " << std::endl;
+    // VERBOSE << "copyKernel: stridingMemcpyKernel use " << numSm << " SMs, each has" << numThreadPerBlock << " threads " << std::endl;
 
     dim3 gridDim(numSm, 1, 1);
     dim3 blockDim(numThreadPerBlock, 1, 1);

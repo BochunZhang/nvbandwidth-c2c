@@ -124,6 +124,24 @@ std::vector<Testcase*> createTestcases() {
         new DeviceToDeviceWriteSMCE(),
         new DeviceToDeviceWriteSMSM(),
 
+        new DeviceToHostCEDeviceToDeviceReadCE(),
+        new DeviceToHostCEDeviceToDeviceReadSM(),
+        new DeviceToHostSMDeviceToDeviceReadCE(),
+        new DeviceToHostSMDeviceToDeviceReadSM(),
+        new DeviceToHostCEDeviceToDeviceWriteCE(),
+        new DeviceToHostCEDeviceToDeviceWriteSM(),
+        new DeviceToHostSMDeviceToDeviceWriteCE(),
+        new DeviceToHostSMDeviceToDeviceWriteSM(),
+
+        new HostToDeviceCEDeviceToDeviceReadCE(),
+        new HostToDeviceCEDeviceToDeviceReadSM(),
+        new HostToDeviceSMDeviceToDeviceReadCE(),
+        new HostToDeviceSMDeviceToDeviceReadSM(),
+        new HostToDeviceCEDeviceToDeviceWriteCE(),
+        new HostToDeviceCEDeviceToDeviceWriteSM(),
+        new HostToDeviceSMDeviceToDeviceWriteCE(),
+        new HostToDeviceSMDeviceToDeviceWriteSM(),
+
 #ifdef MULTINODE
         new MultinodeDeviceToDeviceReadCE(),
         new MultinodeDeviceToDeviceWriteCE(),

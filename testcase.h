@@ -690,6 +690,198 @@ class DeviceToDeviceWriteSMSM: public Testcase {
     bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
 };
 
+// device_to_host CE + device_to_device_read CE: concurrent D->H CE and DtoD read CE
+class DeviceToHostCEDeviceToDeviceReadCE: public Testcase {
+ public:
+    DeviceToHostCEDeviceToDeviceReadCE() : Testcase("device_to_host_ce_device_to_device_read_ce",
+            "\tConcurrent CE stream (device->host) and CE stream (DtoD read) per device pair.\n"
+            "\tRow=primary GPU (D->H source and DtoD read dst), Col=peer GPU (DtoD read src).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostCEDeviceToDeviceReadCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_host CE + device_to_device_read SM
+class DeviceToHostCEDeviceToDeviceReadSM: public Testcase {
+ public:
+    DeviceToHostCEDeviceToDeviceReadSM() : Testcase("device_to_host_ce_device_to_device_read_sm",
+            "\tConcurrent CE stream (device->host) and SM stream (DtoD read) per device pair.\n"
+            "\tRow=primary GPU (D->H source and DtoD read dst), Col=peer GPU (DtoD read src).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostCEDeviceToDeviceReadSM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_host SM + device_to_device_read CE
+class DeviceToHostSMDeviceToDeviceReadCE: public Testcase {
+ public:
+    DeviceToHostSMDeviceToDeviceReadCE() : Testcase("device_to_host_sm_device_to_device_read_ce",
+            "\tConcurrent SM stream (device->host) and CE stream (DtoD read) per device pair.\n"
+            "\tRow=primary GPU (D->H source and DtoD read dst), Col=peer GPU (DtoD read src).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostSMDeviceToDeviceReadCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_host SM + device_to_device_read SM
+class DeviceToHostSMDeviceToDeviceReadSM: public Testcase {
+ public:
+    DeviceToHostSMDeviceToDeviceReadSM() : Testcase("device_to_host_sm_device_to_device_read_sm",
+            "\tConcurrent SM stream (device->host) and SM stream (DtoD read) per device pair.\n"
+            "\tRow=primary GPU (D->H source and DtoD read dst), Col=peer GPU (DtoD read src).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostSMDeviceToDeviceReadSM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_host CE + device_to_device_write CE
+class DeviceToHostCEDeviceToDeviceWriteCE: public Testcase {
+ public:
+    DeviceToHostCEDeviceToDeviceWriteCE() : Testcase("device_to_host_ce_device_to_device_write_ce",
+            "\tConcurrent CE stream (device->host) and CE stream (DtoD write) per device pair.\n"
+            "\tRow=primary GPU (D->H source and DtoD write src), Col=peer GPU (DtoD write dst).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostCEDeviceToDeviceWriteCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_host CE + device_to_device_write SM
+class DeviceToHostCEDeviceToDeviceWriteSM: public Testcase {
+ public:
+    DeviceToHostCEDeviceToDeviceWriteSM() : Testcase("device_to_host_ce_device_to_device_write_sm",
+            "\tConcurrent CE stream (device->host) and SM stream (DtoD write) per device pair.\n"
+            "\tRow=primary GPU (D->H source and DtoD write src), Col=peer GPU (DtoD write dst).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostCEDeviceToDeviceWriteSM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_host SM + device_to_device_write CE
+class DeviceToHostSMDeviceToDeviceWriteCE: public Testcase {
+ public:
+    DeviceToHostSMDeviceToDeviceWriteCE() : Testcase("device_to_host_sm_device_to_device_write_ce",
+            "\tConcurrent SM stream (device->host) and CE stream (DtoD write) per device pair.\n"
+            "\tRow=primary GPU (D->H source and DtoD write src), Col=peer GPU (DtoD write dst).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostSMDeviceToDeviceWriteCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// device_to_host SM + device_to_device_write SM
+class DeviceToHostSMDeviceToDeviceWriteSM: public Testcase {
+ public:
+    DeviceToHostSMDeviceToDeviceWriteSM() : Testcase("device_to_host_sm_device_to_device_write_sm",
+            "\tConcurrent SM stream (device->host) and SM stream (DtoD write) per device pair.\n"
+            "\tRow=primary GPU (D->H source and DtoD write src), Col=peer GPU (DtoD write dst).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~DeviceToHostSMDeviceToDeviceWriteSM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// host_to_device CE + device_to_device_read CE
+class HostToDeviceCEDeviceToDeviceReadCE: public Testcase {
+ public:
+    HostToDeviceCEDeviceToDeviceReadCE() : Testcase("host_to_device_ce_device_to_device_read_ce",
+            "\tConcurrent CE stream (host->device) and CE stream (DtoD read) per device pair.\n"
+            "\tRow=primary GPU (H->D dst and DtoD read dst), Col=peer GPU (DtoD read src).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceCEDeviceToDeviceReadCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// host_to_device CE + device_to_device_read SM
+class HostToDeviceCEDeviceToDeviceReadSM: public Testcase {
+ public:
+    HostToDeviceCEDeviceToDeviceReadSM() : Testcase("host_to_device_ce_device_to_device_read_sm",
+            "\tConcurrent CE stream (host->device) and SM stream (DtoD read) per device pair.\n"
+            "\tRow=primary GPU (H->D dst and DtoD read dst), Col=peer GPU (DtoD read src).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceCEDeviceToDeviceReadSM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// host_to_device SM + device_to_device_read CE
+class HostToDeviceSMDeviceToDeviceReadCE: public Testcase {
+ public:
+    HostToDeviceSMDeviceToDeviceReadCE() : Testcase("host_to_device_sm_device_to_device_read_ce",
+            "\tConcurrent SM stream (host->device) and CE stream (DtoD read) per device pair.\n"
+            "\tRow=primary GPU (H->D dst and DtoD read dst), Col=peer GPU (DtoD read src).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceSMDeviceToDeviceReadCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// host_to_device SM + device_to_device_read SM
+class HostToDeviceSMDeviceToDeviceReadSM: public Testcase {
+ public:
+    HostToDeviceSMDeviceToDeviceReadSM() : Testcase("host_to_device_sm_device_to_device_read_sm",
+            "\tConcurrent SM stream (host->device) and SM stream (DtoD read) per device pair.\n"
+            "\tRow=primary GPU (H->D dst and DtoD read dst), Col=peer GPU (DtoD read src).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceSMDeviceToDeviceReadSM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// host_to_device CE + device_to_device_write CE
+class HostToDeviceCEDeviceToDeviceWriteCE: public Testcase {
+ public:
+    HostToDeviceCEDeviceToDeviceWriteCE() : Testcase("host_to_device_ce_device_to_device_write_ce",
+            "\tConcurrent CE stream (host->device) and CE stream (DtoD write) per device pair.\n"
+            "\tRow=primary GPU (H->D dst and DtoD write src), Col=peer GPU (DtoD write dst).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceCEDeviceToDeviceWriteCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// host_to_device CE + device_to_device_write SM
+class HostToDeviceCEDeviceToDeviceWriteSM: public Testcase {
+ public:
+    HostToDeviceCEDeviceToDeviceWriteSM() : Testcase("host_to_device_ce_device_to_device_write_sm",
+            "\tConcurrent CE stream (host->device) and SM stream (DtoD write) per device pair.\n"
+            "\tRow=primary GPU (H->D dst and DtoD write src), Col=peer GPU (DtoD write dst).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceCEDeviceToDeviceWriteSM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// host_to_device SM + device_to_device_write CE
+class HostToDeviceSMDeviceToDeviceWriteCE: public Testcase {
+ public:
+    HostToDeviceSMDeviceToDeviceWriteCE() : Testcase("host_to_device_sm_device_to_device_write_ce",
+            "\tConcurrent SM stream (host->device) and CE stream (DtoD write) per device pair.\n"
+            "\tRow=primary GPU (H->D dst and DtoD write src), Col=peer GPU (DtoD write dst).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceSMDeviceToDeviceWriteCE() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
+// host_to_device SM + device_to_device_write SM
+class HostToDeviceSMDeviceToDeviceWriteSM: public Testcase {
+ public:
+    HostToDeviceSMDeviceToDeviceWriteSM() : Testcase("host_to_device_sm_device_to_device_write_sm",
+            "\tConcurrent SM stream (host->device) and SM stream (DtoD write) per device pair.\n"
+            "\tRow=primary GPU (H->D dst and DtoD write src), Col=peer GPU (DtoD write dst).\n"
+            "\tReports per-stream and total bandwidth.") {}
+    virtual ~HostToDeviceSMDeviceToDeviceWriteSM() {}
+    void run(unsigned long long size, unsigned long long loopCount);
+    bool filter() { return Testcase::filterHasAccessiblePeerPairs(); }
+};
+
 
 #ifdef MULTINODE
 // Device to Device CE Read memcpy using cuMemcpyAsync
