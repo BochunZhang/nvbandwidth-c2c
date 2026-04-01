@@ -1401,12 +1401,12 @@ void ConcurrentCE::run(unsigned long long size, unsigned long long loopCount) {
         PREFER_SRC_CONTEXT,   // s3: GPU0->GPU1 write, src=GPU0 -> GPU0
         PREFER_SRC_CONTEXT,   // s4: GPU1->GPU2 write, src=GPU1 -> GPU1
         PREFER_SRC_CONTEXT,   // s5: GPU1->GPU3 write, src=GPU1 -> GPU1
-        PREFER_DST_CONTEXT,   // s6: GPU2->GPU1 read, src=GPU1 -> GPU1
-        PREFER_DST_CONTEXT,   // s7: GPU3->GPU1 read, src=GPU1 -> GPU1
+        PREFER_DST_CONTEXT,   // s6: GPU2->GPU1 read, dst=GPU1 -> GPU1
+        PREFER_DST_CONTEXT,   // s7: GPU3->GPU1 read, dst=GPU1 -> GPU1
     };
 
     std::vector<const MemcpyBuffer*> srcBufs = {&s0hostBuf, &s1gpu0Buf, &s2gpu1Buf, &s3gpu0Buf, &s4gpu1Buf, &s5gpu1Buf, &s6gpu2Buf, &s7gpu3Buf};
-    std::vector<const MemcpyBuffer*> dstBufs = {&s0gpu0Buf, &s1hostBuf, &s2gpu0Buf, &s3gpu1Buf, &s4gpu2Buf, &s5gpu3Buf, &s6gpu1Buf};
+    std::vector<const MemcpyBuffer*> dstBufs = {&s0gpu0Buf, &s1hostBuf, &s2gpu0Buf, &s3gpu1Buf, &s4gpu2Buf, &s5gpu3Buf, &s6gpu1Buf, &s7gpu1Buf};
     std::vector<InitiatorType> types = {
         InitiatorType::CE, InitiatorType::CE, InitiatorType::CE, InitiatorType::CE,
         InitiatorType::CE, InitiatorType::CE, InitiatorType::CE, InitiatorType::CE,
