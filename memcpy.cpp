@@ -717,10 +717,11 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
         // ========== Bandwidth calculation: only measure Test phase ==========
         std::vector<unsigned long long> aggregate(gpuIds.size(), 0);
         for (int i = 0; i < (int)bandwidthStats.size(); i++) {
-            float warmTime = 0.0f, testTime = 0.0f, coolTime = 0.0f, totalTime = 0.0f;
+            float warmTime = 0.0f, testTime = 0.0f, coolTime = 0.0f, testEndTime = 0.0f, totalTime = 0.0f;
             CU_ASSERT(cuEventElapsedTime(&warmTime, warmupStartEvents[i], testStartEvents[i]));
             CU_ASSERT(cuEventElapsedTime(&testTime, testStartEvents[i], cooldownStartEvents[i]));
             CU_ASSERT(cuEventElapsedTime(&coolTime, cooldownStartEvents[i], cooldownEndEvents[i]));
+            CU_ASSERT(cuEventElapsedTime(&testEndTime, warmupStartEvents[i], cooldownStartEvents[i]));
             CU_ASSERT(cuEventElapsedTime(&totalTime, warmupStartEvents[i], cooldownEndEvents[i]));
             double elapsedTestInUs = ((double) testTime * 1000.0);
             unsigned long long bandwidth = (adjustedCopySizes[i] * loopCount * 1000ull * 1000ull) / (unsigned long long) elapsedTestInUs;
@@ -734,6 +735,7 @@ std::vector<double> CustomMemcpyOperation::doMemcpyCore(MemcpyDispatchInfo &info
                 << std::fixed << std::setprecision(2) << (double)bandwidth * 1e-9 << " GB/s, "
                 << "warm: " << std::fixed << std::setprecision(3) << warmTime << " ms, "
                 << "test: " << std::fixed << std::setprecision(3) << testTime << " ms, "
+                << "end time: " << std::fixed << std::setprecision(3) << testEndTime << " ms, "
                 << "cool: " << std::fixed << std::setprecision(3) << coolTime << " ms, "
                 << "total: " << std::fixed << std::setprecision(3) << totalTime << " ms\n";
 
