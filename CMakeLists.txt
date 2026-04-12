@@ -70,6 +70,11 @@ add_executable(nvbandwidth ${src})
 target_include_directories(nvbandwidth PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} .)
 target_link_libraries(nvbandwidth Boost::program_options ${NVML_LIB_NAME} cuda)
 
+# ── query_async_engines: standalone CE/async-engine info tool ─────────────────
+add_executable(query_async_engines query_async_engines.cpp)
+target_include_directories(query_async_engines PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_link_libraries(query_async_engines cuda)
+
 if (MULTINODE)
     find_package(MPI REQUIRED)
     include_directories(SYSTEM ${MPI_INCLUDE_PATH})
